@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mari — Assistente Santa Maria</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet"/>
+  <!-- Three.js e GLTFLoader -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/loaders/GLTFLoader.js"></script>
+  <!-- Face API para Reconhecimento de Emoções -->
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <style>
+    :root {
+      --primary: #5b9cff;
+      --secondary: #a78bfa;
+      --accent: #f472b6;
+      --bg-dark: #0f172a;
+      --glass-bg: rgba(15, 23, 42, 0.4);
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: var(--bg-dark);
+      font-family: 'Outfit', sans-serif;
+      color: #fff;
+    }
+
+    /* ── Animated Background ───────────────────────────────────────────── */
+    .bg-mesh {
+      position: fixed; inset: 0; z-index: 0;
+      background: #060d1c;
+      overflow: hidden;
+    }
+    .blob {
+      position: absolute; filter: blur(90px); opacity: 0.6;
+      animation: float 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: rgba(91, 156, 255, 0.4); }
+    .blob-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: rgba(167, 139, 250, 0.3); animation-delay: -5s; }
+    .blob-3 { top: 40%; left: 30%; width: 40vw; height: 40vw; background: rgba(244, 114, 182, 0.2); animation-delay: -10s; }
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(5%, 10%) scale(1.1); }
+      100% { transform: translate(-5%, -5%) scale(0.9); }
+    }
+    
+    canvas#particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+    
+    #ground-glow {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 120px;
+      background: radial-gradient(ellipse, rgba(91, 156, 255, 0.25) 0%, transparent 60%);
+      z-index: 2; pointer-events: none;
+    }
+
+    /* ── Glass Header ───────────────────────────────────── */
+    #header-glass {
+      position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+      z-index: 20; text-align: center; pointer-events: none;
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 16px 36px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      width: max-content;
+      max-width: 90%;
+    }
+    #header-glass h1 {
+      font-size: clamp(1rem, 2vw, 1.4rem); font-weight: 800; letter-spacing: 0.05em;
+      background: linear-gradient(135deg, #fff, #cbd5e1);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    #header-glass p {
+      font-size: clamp(0.75rem, 1.2vw, 0.9rem); color: #94a3b8;
+      margin-top: 4px; font-weight: 400; letter-spacing: 0.02em;
+    }
+
+    /* ── Personagem 3D ─────────────────────────────────────── */
+    #canvas-wrap {
+      position: fixed; inset: 0; z-index: 10;
+    }
+    #canvas-wrap canvas {
+      display: block; width: 100%; height: 100%;
+    }
+
+    #aura {
+      position: absolute;
+      width: clamp(280px, 45vh, 450px); height: clamp(280px, 45vh, 450px);
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(91, 156, 255, 0.15) 0%, transparent 70%);
+      top: 50%; left: 50%; transform: translate(-50%, -48%);
+      z-index: -1; animation: aura-pulse 4s ease-in-out infinite; pointer-events: none;
+    }
+
+    /* ── Controles Glass ─────────────────────── */
+    #controls-glass {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      z-index: 40; display: flex; align-items: center; gap: 20px;
+      background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border); border-radius: 100px;
+      padding: 10px 10px 10px 30px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      transition: all 0.3s ease;
+    }
+    #status-text {
+      font-size: 1.1rem; font-weight: 600; color: #e2e8f0;
+      white-space: nowrap; transition: color 0.3s;
+    }
+    
+    #mic-btn {
+      width: 60px; height: 60px;
+      border: none; border-radius: 50%;
+      font-size: 1.5rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    #mic-btn:hover { transform: scale(1.1); }
+    #mic-btn:active { transform: scale(0.95); }
+    
+    .mic-idle {
+      background: linear-gradient(135deg, var(--primary), #3b82f6);
+      box-shadow: 0 0 20px rgba(91, 156, 255, 0.5);
+      color: white;
+    }
+    .mic-idle:hover { box-shadow: 0 0 30px rgba(91, 156, 255, 0.8); }
+    
+    .mic-listening {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+      color: white;
+      animation: pulse-listen 1.5s infinite;
+    }
+    .mic-thinking {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+      color: white;
+      animation: pulse-think 1s infinite alternate;
+    }
+    .mic-speaking {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+      animation: pulse-speak 2s infinite;
+    }
+
+    @keyframes pulse-listen {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    @keyframes pulse-think {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.1); }
+    }
+    @keyframes pulse-speak {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      50% { box-shadow: 0 0 0 25px rgba(16, 185, 129, 0); }
+    }
+
+    /* ── QR Code Glass Panel ─────────────────────────────── */
+    #qr-display {
+      position: fixed; right: 30px; top: 30px; z-index: 100;
+      background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border); border-radius: 16px;
+      padding: 20px; text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      display: none; flex-direction: column; align-items: center; gap: 10px;
+    }
+    #qr-display h3 {
+      font-size: 1.1rem; font-weight: 600; color: #e2e8f0; margin-bottom: 5px;
+    }
+    #qr-display img {
+      border-radius: 8px; width: 150px; height: 150px;
+    }
+
+    /* ── Phone Popup Modal ─────────────────────────────── */
+    #phone-modal {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 375px; height: 700px; z-index: 200;
+      background: #000; border-radius: 40px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 0 10px #1f2937, 0 0 0 12px #374151;
+      display: none; flex-direction: column; overflow: hidden;
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      0% { transform: translate(-50%, -40%) scale(0.8); opacity: 0; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    #phone-header {
+      height: 40px; background: #000; width: 100%; display: flex; justify-content: center; align-items: flex-end; position: relative;
+    }
+    .phone-notch {
+      width: 120px; height: 25px; background: #1f2937; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+    }
+    #phone-close {
+      position: absolute; right: 15px; top: 12px; color: #fff; cursor: pointer; font-size: 1.2rem; font-weight: bold; background: rgba(255,255,255,0.2); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; line-height: 1;
+    }
+    #phone-close:hover { background: rgba(255,255,255,0.4); }
+    #phone-iframe {
+      width: 100%; flex-grow: 1; border: none; background: #fff;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       ANIMAÇÕES IDLE E EMOÇÕES
+    ══════════════════════════════════════════════════════ */
+    @keyframes idle {
+      0%,100%{transform:translateY(0)    rotate(0deg);}
+      30%    {transform:translateY(-10px) rotate(0.5deg);}
+      70%    {transform:translateY(-5px) rotate(-0.5deg);}
+    }
+    @keyframes aura-pulse {
+      0%,100%{opacity:0.6;transform:translate(-50%,-48%) scale(1);}
+      50%    {opacity:1; transform:translate(-50%,-48%) scale(1.1);}
+    }
+    @keyframes wave-anim{
+      0%  {transform:translateY(0) rotate(0);}
+      15% {transform:translateY(-10px) rotate(-4deg);}
+      30% {transform:translateY(-8px) rotate(4deg);}
+      45% {transform:translateY(-10px) rotate(-3deg);}
+      60% {transform:translateY(-8px) rotate(3deg);}
+      80% {transform:translateY(-5px) rotate(-1deg);}
+      100%{transform:translateY(0) rotate(0);}
+    }
+    @keyframes happy-anim{
+      0%  {transform:translateY(0) scale(1);}
+      20% {transform:translateY(-22px) scale(1.05);}
+      35% {transform:translateY(0) scale(0.98);}
+      50% {transform:translateY(-15px) scale(1.04);}
+      65% {transform:translateY(0) scale(0.99);}
+      80% {transform:translateY(-8px) scale(1.02);}
+      100%{transform:translateY(0) scale(1);}
+    }
+    @keyframes sad-anim{
+      0%  {transform:translateY(0) rotate(0);}
+      20% {transform:translateY(6px) rotate(-2deg);}
+      50% {transform:translateY(8px) rotate(-3deg);}
+      80% {transform:translateY(6px) rotate(-2deg);}
+      100%{transform:translateY(0) rotate(0);}
+    }
+    @keyframes think-anim{
+      0%  {transform:translateY(0) rotate(0);}
+      30% {transform:translateY(-8px) rotate(3deg);}
+      70% {transform:translateY(-4px) rotate(4deg);}
+      100%{transform:translateY(0) rotate(0);}
+    }
+    @keyframes surprise-anim{
+      0%  {transform:scale(1) translateY(0);}
+      10% {transform:scale(1.12) translateY(-8px);}
+      25% {transform:scale(1.08) translateY(-5px);}
+      40% {transform:scale(1.09) translateY(-6px);}
+      100%{transform:scale(1) translateY(0);}
+    }
+    @keyframes dance-anim{
+      0%  {transform:rotate(0) translateY(0);}
+      15% {transform:rotate(-8deg) translateY(-12px);}
+      30% {transform:rotate(8deg) translateY(-8px);}
+      45% {transform:rotate(-6deg) translateY(-14px);}
+      60% {transform:rotate(6deg) translateY(-10px);}
+      75% {transform:rotate(-4deg) translateY(-12px);}
+      90% {transform:rotate(4deg) translateY(-6px);}
+      100%{transform:rotate(0) translateY(0);}
+    }
+    @keyframes shake-anim{
+      0%,100%{transform:translateX(0);}
+      15%{transform:translateX(-10px) rotate(-2deg);}
+      30%{transform:translateX(10px) rotate(2deg);}
+      45%{transform:translateX(-8px) rotate(-1.5deg);}
+      60%{transform:translateX(8px) rotate(1.5deg);}
+      80%{transform:translateX(-4px);}
+    }
+
+    .particle {
+      position: fixed; pointer-events: none; z-index: 50;
+      font-size: 1.8rem; animation: particle-up 1.6s ease-out forwards;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    }
+    @keyframes particle-up {
+      0%  {opacity: 1; transform: translateY(0) scale(1);}
+      100%{opacity: 0; transform: translateY(-150px) scale(1.8);}
+    }
+
+    /* ── Selfie Feature ─────────────────────────────── */
+    #countdown-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      display: none; justify-content: center; align-items: center;
+      z-index: 500; font-size: 25rem; font-weight: 900; color: #fff;
+      text-shadow: 0 10px 50px rgba(0,0,0,0.8), 0 0 20px var(--primary-color);
+    }
+    .countdown-anim {
+      animation: popInOut 1s ease-in-out;
+    }
+    @keyframes popInOut {
+      0% { transform: scale(0.2); opacity: 0; }
+      20% { transform: scale(1.2); opacity: 1; }
+      80% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+    #camera-flash {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #fff; z-index: 9999; display: none; opacity: 0;
+    }
+    .flash-anim {
+      animation: flashEffect 0.5s ease-out;
+    }
+    @keyframes flashEffect {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    #selfie-modal {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 900px; max-width: 90vw; max-height: 90vh; background: var(--glass-bg);
+      backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
+      border-radius: 30px; z-index: 600; padding: 25px; display: none;
+      flex-direction: column; align-items: center;
+      box-shadow: 0 35px 70px rgba(0,0,0,0.6); overflow-y: auto;
+    }
+    #selfie-modal h2 { color: #fff; margin-bottom: 15px; font-size: 1.8rem; text-align: center;}
+    .selfie-content { display: flex; flex-direction: column; gap: 20px; width: 100%; align-items: center; justify-content: center;}
+    #selfie-result-img { width: 100%; max-width: 480px; height: auto; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); border: 6px solid #fff;}
+    .selfie-qr { display: flex; flex-direction: column; align-items: center; color: #fff; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); width: 100%; max-width: 480px;}
+    .selfie-qr img { width: 160px; height: 160px; background: #fff; padding: 10px; border-radius: 12px; margin-bottom: 5px;}
+    .selfie-qr p { margin-top: 5px; font-weight: 600; font-size: 1.1rem; text-align: center; }
+  </style>
+</head>
+<body>
+
+<div class="bg-mesh">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+<canvas id="particles"></canvas>
+<div id="ground-glow"></div>
+
+<!-- Elementos invisíveis para detecção de presença (câmera) -->
+<video id="presence-video" style="position: absolute; opacity: 0.01; pointer-events: none; width: 320px; height: 240px; z-index: -10;" autoplay playsinline muted></video>
+<canvas id="presence-canvas" width="320" height="240" style="display:none;"></canvas>
+
+<header id="header-glass">
+  <h1>Santa Maria</h1>
+  <p>Bem-vindo ao nosso portal interativo!</p>
+</header>
+
+<div id="qr-display">
+  <h3 id="qr-title">Acesse o Link</h3>
+  <img id="qr-image" src="" alt="QR Code">
+</div>
+
+<!-- Selfie Elements -->
+<div id="countdown-overlay">3</div>
+<div id="camera-flash"></div>
+
+<div id="selfie-modal">
+  <div style="position: absolute; right: 30px; top: 25px; color: rgba(255,255,255,0.6); font-size: 2rem; cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.6)'" onclick="document.getElementById('selfie-modal').style.display='none'">✖</div>
+  <h2>📸 Sua Selfie com a Mari!</h2>
+  <div class="selfie-content">
+    <img id="selfie-result-img" src="" alt="Selfie">
+    <div class="selfie-qr">
+      <img id="selfie-qr-img-el" src="" alt="QR Code">
+      <p>Escaneie o QR Code<br>para baixar a foto!</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal em formato de Celular -->
+<div id="phone-modal">
+  <div id="phone-header">
+    <div class="phone-notch"></div>
+    <div id="phone-close" onclick="closePhonePopup()">×</div>
+  </div>
+  <iframe id="phone-iframe" src="" style="display:none;"></iframe>
+  <div id="phone-custom-content" style="display:none; width: 100%; height: 100%; overflow-y: auto; background: #fff;">
+    <!-- Elfsight Instagram Feed -->
+    <script src="https://elfsightcdn.com/platform.js" async></script>
+    <div class="elfsight-app-bd477d55-5638-488c-bd61-688f797cff69" data-elfsight-app-lazy></div>
+  </div>
+</div>
+
+<div id="canvas-wrap"></div>
+<div id="particle-origin" style="position:fixed;bottom:35%;left:50%;width:1px;height:1px;"></div>
+
+<div id="controls-glass">
+  <div id="status-text">Falar com a Mari</div>
+  <button id="mic-btn" class="mic-idle">
+    <span class="mic-icon">🎤</span>
+  </button>
+</div>
+
+<script>
+/* ── Partículas de fundo ────────────────────────────── */
+(function(){
+  const c = document.getElementById('particles');
+  const ctx = c.getContext('2d');
+  let W, H, pts = [];
+
+  function resize(){
+    W = c.width  = innerWidth;
+    H = c.height = innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for(let i=0;i<80;i++){
+    pts.push({
+      x: Math.random()*1200, y: Math.random()*800,
+      r: Math.random()*1.5+0.5,
+      sp: Math.random()*0.5+0.1,
+      op: Math.random()*0.6+0.1,
+      t: Math.random()*Math.PI*2
+    });
+  }
+
+  function drawParticles(){
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p=>{
+      p.t += p.sp*0.02;
+      p.y -= p.sp*0.2;
+      if(p.y < -5) p.y = H+5;
+      const op = p.op*0.5*(1+Math.sin(p.t));
+      ctx.beginPath();
+      ctx.arc(p.x % W, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${op})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(drawParticles);
+  }
+  drawParticles();
+})();
+
+/* ── Lógica 3D e Emoções ─────────────────────────────── */
+const particleOrigin = document.getElementById('particle-origin');
+const canvasWrap = document.getElementById('canvas-wrap');
+
+// Setup Three.js
+const scene = new THREE.Scene();
+// Aumentar o "far" para 1000 para nunca cortar o modelo se ele for empurrado para trás
+const cam = new THREE.PerspectiveCamera(40, innerWidth/innerHeight, 0.1, 1000);
+cam.position.set(0, 0.5, 7.0); // Câmera bem longe e centralizada
+
+// alpha: true permite que o fundo gradiente de CSS apareça!
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(innerWidth, innerHeight);
+// Corrigir as cores das texturas (sRGB)
+renderer.outputEncoding = 3001; // THREE.sRGBEncoding
+canvasWrap.appendChild(renderer.domElement);
+
+const light = new THREE.DirectionalLight(0xffffff, 1.2);
+light.position.set(2, 5, 3);
+scene.add(light);
+scene.add(new THREE.AmbientLight(0xffffff, 0.8)); // Luz mais forte
+
+let model, mixer;
+window.actions = {};
+window.currentAction = null;
+
+let currentAudio = null;
+let audioCtx = null;
+let audioAnalyser = null;
+let audioSource = null;
+let headBone = null;
+let currentHeadVolume = 0;
+
+function initAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioAnalyser = audioCtx.createAnalyser();
+    audioAnalyser.fftSize = 256;
+  }
+}
+
+// Quando o modelo carrega, procura o osso da cabeça
+const loader = new THREE.GLTFLoader();
+loader.load('mari.glb', (gltf) => {
+  model = gltf.scene;
+  
+  model.traverse(child => {
+    if (child.isBone && child.name.includes('Head')) {
+      headBone = child;
+    }
+  });
+  
+  // FIX DEFINITIVO: O GLB tem exatamente 1 metro (de -0.5 a 0.5)
+  // Vamos dobrar o tamanho para 2 metros e posicionar os pés no chão da tela.
+  model.scale.setScalar(2.0); 
+  model.position.set(0, -1.0, 0); 
+  
+  scene.add(model);
+  
+  // Câmera a 4 metros de distância, olhando para a cintura/peito dela (Y=0)
+  cam.position.set(0, 0.5, 4.0);
+  cam.lookAt(0, 0, 0);
+
+  if(gltf.animations && gltf.animations.length > 0){
+    mixer = new THREE.AnimationMixer(model);
+    gltf.animations.forEach(clip => {
+      if(clip.name === "ArmatureAction") return;
+      window.actions[clip.name] = mixer.clipAction(clip);
+    });
+    doEmotion('idle');
+  }
+});
+
+window.playAnim = function(name){
+  const action = window.actions[name];
+  if(!action) return;
+  if(window.currentAction && window.currentAction !== action){
+    window.currentAction.fadeOut(0.5);
+  }
+  action.reset().fadeIn(0.5).play();
+  window.currentAction = action;
+};
+
+// Seguir o mouse (Apenas rotação Y para não deitar o corpo)
+let mouseX = 0;
+window.addEventListener('mousemove', e => {
+  mouseX = (e.clientX / innerWidth) * 2 - 1;
+});
+window.addEventListener('touchmove', e => {
+  mouseX = (e.touches[0].clientX / innerWidth) * 2 - 1;
+}, {passive:true});
+
+const clock = new THREE.Clock();
+
+// Atualiza a função animate para aplicar a rotação na cabeça DEPOIS do mixer
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  if(mixer) mixer.update(dt);
+  
+  if(model) {
+    model.rotation.y += (mouseX * 0.6 - model.rotation.y) * 4 * dt;
+  }
+  
+  // Sincronia Labial (Balanço de Cabeça baseado no Volume)
+  if(headBone && audioAnalyser && currentAudio && !currentAudio.paused) {
+    const dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
+    audioAnalyser.getByteFrequencyData(dataArray);
+    let sum = 0;
+    for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
+    let avg = sum / dataArray.length; // Volume de 0 a 255
+    
+    // Suaviza o movimento
+    let targetVol = (avg / 255.0) * 0.25; // max 0.25 radianos
+    currentHeadVolume += (targetVol - currentHeadVolume) * 15 * dt;
+    
+    // Adiciona rotação extra para simular a fala
+    headBone.rotation.x += currentHeadVolume;
+  }
+  
+  renderer.render(scene, cam);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  cam.aspect = innerWidth/innerHeight;
+  cam.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* ── Mapeamento de Emoções para Animações ──────────────── */
+const EMOTIONS = {
+  idle: { anim3d: 'Idle', particles: [] },
+  wave: { anim3d: 'Waving', particles: ['👋','✨','🌟'] },
+  happy: { anim3d: 'Talking', particles: ['⭐','✨','💛','🌟','😄'] },
+  think: { anim3d: 'Pointing', particles: ['💭','🤔','💡'] },
+  sad: { anim3d: 'Idle', particles: ['💧','😢','💙'] },
+  listen: { anim3d: 'Nodding', particles: [] }
+};
+
+let emoTimeout = null;
+
+function spawnParticles(list){
+  if(!list || !list.length) return;
+  const rect = particleOrigin.getBoundingClientRect();
+  for(let i=0; i<Math.min(list.length,6); i++){
+    const el = document.createElement('div');
+    el.className = 'particle';
+    el.textContent = list[Math.floor(Math.random()*list.length)];
+    el.style.left  = (rect.left - 50 + Math.random()*100) + 'px';
+    el.style.top   = (rect.top - 50 + Math.random()*100) + 'px';
+    el.style.animationDelay = (i*0.1)+'s';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 1600);
+  }
+}
+
+function doEmotion(name){
+  const e = EMOTIONS[name] || EMOTIONS.idle;
+  if(emoTimeout) clearTimeout(emoTimeout);
+  
+  if(window.playAnim) window.playAnim(e.anim3d);
+  spawnParticles(e.particles);
+  
+  // APENAS ações pontuais voltam sozinhas.
+  // Ouvir, Pensar e Falar ficam em loop infinito até que o evento do microfone mande parar!
+  if(name === 'wave' || name === 'sad'){
+    emoTimeout = setTimeout(()=>doEmotion('idle'), 3000); // 3 segs e volta pro idle
+  }
+}
+
+// Acenar ao clicar na tela
+canvasWrap.addEventListener('click', ()=>doEmotion('wave'));
+
+/* ── INTEGRAÇÃO GROQ E VOZ ─────────────────────────────── */
+const GROQ_API_KEY = "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";
+const ELEVENLABS_API_KEY = "sk_868b6692e6e08d3dbaf2cf89b409cc60f2117ce0b8f032b5";
+const ELEVENLABS_VOICE_ID = "EXAVITQu4vr4xnSDxMaL";
+const micBtn = document.getElementById('mic-btn');
+const statusText = document.getElementById('status-text');
+const controls = document.getElementById('controls-glass');
+let isListening = false;
+let recognition = null;
+let conversationHistory = [];
+let qrTimeout = null;
+
+function setMicState(state, text, icon) {
+  micBtn.className = ''; 
+  micBtn.classList.add(`mic-${state}`);
+  micBtn.innerHTML = `<span class="mic-icon">${icon}</span>`;
+  statusText.textContent = text;
+  
+  if (state === 'listening') {
+    statusText.style.color = '#fca5a5';
+    controls.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+  } else if (state === 'thinking') {
+    statusText.style.color = '#fde047';
+    controls.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+  } else if (state === 'speaking') {
+    statusText.style.color = '#86efac';
+    controls.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+  } else {
+    statusText.style.color = '#e2e8f0';
+    controls.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+  }
+}
+
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'pt-BR';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    isListening = true;
+    setMicState('listening', 'Ouvindo...', '🔴');
+    doEmotion('listen');
+  };
+
+  recognition.onresult = async (event) => {
+    const text = event.results[0][0].transcript;
+    setMicState('thinking', 'Pensando...', '⏳');
+    await processWithGroq(text);
+  };
+
+  recognition.onerror = (e) => {
+    console.error("Speech Recognition Error:", e);
+    resetMicBtn();
+    doEmotion('sad');
+  };
+
+  recognition.onend = () => {
+    if(!isListening) return;
+    if(micBtn.classList.contains('mic-listening')) resetMicBtn();
+  };
+} else {
+  setMicState('idle', 'Navegador não suporta voz', '⚠️');
+  micBtn.disabled = true;
+}
+
+micBtn.onclick = () => {
+  initAudioContext(); // Inicia o contexto de áudio ao interagir com a página
+  if (isListening) {
+    recognition.stop();
+    resetMicBtn();
+  } else if (recognition) {
+    recognition.start();
+  }
+};
+
+function resetMicBtn() {
+  isListening = false;
+  setMicState('idle', 'Falar com a Mari', '🎤');
+}
+
+async function searchWikipedia(query) {
+  try {
+    const res = await fetch(`https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`);
+    const data = await res.json();
+    if (data.query.search.length > 0) {
+      const pageId = data.query.search[0].pageid;
+      const res2 = await fetch(`https://pt.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=true&explaintext=true&pageids=${pageId}&format=json&origin=*`);
+      const data2 = await res2.json();
+      return data2.query.pages[pageId].extract;
+    }
+    return "Não encontrei informações na Wikipedia sobre isso.";
+  } catch (e) {
+    return "Erro ao acessar a Wikipedia.";
+  }
+}
+
+async function getWeather() {
+  try {
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=-19.53&longitude=-40.63&current_weather=true`);
+    const data = await res.json();
+    const w = data.current_weather;
+    return `Tempo atual em Colatina: ${w.temperature}°C, vento a ${w.windspeed}km/h.`;
+  } catch (e) {
+    return "Erro ao acessar a previsão do tempo.";
+  }
+}
+
+function showQrCode(url, title) {
+  const qrDisplay = document.getElementById('qr-display');
+  const qrImage = document.getElementById('qr-image');
+  const qrTitle = document.getElementById('qr-title');
+  
+  qrTitle.textContent = title || "Acesse o Link";
+  qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;
+  qrDisplay.style.display = 'flex';
+  
+  if (qrTimeout) clearTimeout(qrTimeout);
+  qrTimeout = setTimeout(() => {
+    qrDisplay.style.display = 'none';
+  }, 20000); // Esconde após 20 segundos
+  
+  // Esconde o QR code se o usuário clicar nele
+  qrDisplay.onclick = () => { qrDisplay.style.display = 'none'; };
+  
+  return "O QR Code foi exibido na tela com sucesso.";
+}
+
+function getCardapio() {
+  return "Cardápio do dia: Arroz, feijão, frango assado e salada de alface. Sobremesa: Maçã.";
+}
+
+function getAgenda() {
+  return "Agenda de hoje: Feira de Ciências durante a manhã e Reunião de Pais e Mestres às 18h30.";
+}
+
+function closePhonePopup() {
+  document.getElementById('phone-modal').style.display = 'none';
+  document.getElementById('phone-iframe').src = '';
+}
+
+function openWebsitePopup(url) {
+  const modal = document.getElementById('phone-modal');
+  const iframe = document.getElementById('phone-iframe');
+  const custom = document.getElementById('phone-custom-content');
+  
+  if (url.toLowerCase().includes("instagram")) {
+    // Se for instagram, mostra o widget do Elfsight
+    iframe.style.display = 'none';
+    iframe.src = '';
+    custom.style.display = 'block';
+  } else {
+    // Outros links usam o iframe normal
+    custom.style.display = 'none';
+    iframe.src = url;
+    iframe.style.display = 'block';
+  }
+  
+  modal.style.display = 'flex';
+  return "O site foi aberto na tela simulando um celular com sucesso.";
+}
+
+async function takeSelfie() {
+  const overlay = document.getElementById('countdown-overlay');
+  const flash = document.getElementById('camera-flash');
+  const video = document.getElementById('presence-video');
+  const modal = document.getElementById('selfie-modal');
+  const resultImg = document.getElementById('selfie-result-img');
+  const qrImg = document.getElementById('selfie-qr-img-el');
+  
+  // Fala os números mas não trava a thread visual
+  speak("Três... Dois... Um... Xis!");
+  
+  overlay.style.display = 'flex';
+  for (let i = 3; i > 0; i--) {
+    overlay.textContent = i;
+    overlay.classList.remove('countdown-anim');
+    void overlay.offsetWidth;
+    overlay.classList.add('countdown-anim');
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  
+  overlay.textContent = "XIS!";
+  await new Promise(r => setTimeout(r, 400));
+  
+  flash.style.display = 'block';
+  flash.classList.add('flash-anim');
+  
+  const canvas = document.createElement('canvas');
+  // Sempre usa a proporção natural da webcam (Landscape 16:9) para não dar "zoom" cortando os lados
+  const vw = video.videoWidth || 1280;
+  const vh = video.videoHeight || 720;
+  
+  canvas.width = vw;
+  canvas.height = vh;
+  const ctx = canvas.getContext('2d');
+  
+  // Desenha e espelha a webcam cobrindo todo o canvas (object-fit: cover)
+  ctx.save();
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+  const hRatioVideo = canvas.width / vw;
+  const vRatioVideo = canvas.height / vh;
+  const ratioVideo = Math.max(hRatioVideo, vRatioVideo);
+  const cxVideo = (canvas.width - vw * ratioVideo) / 2;
+  const cyVideo = (canvas.height - vh * ratioVideo) / 2;
+  ctx.drawImage(video, 0, 0, vw, vh, cxVideo, cyVideo, vw * ratioVideo, vh * ratioVideo);
+  ctx.restore();
+  
+  // Desenha a Matildinha 3D por cima (sem espelhar!)
+  if (typeof renderer !== 'undefined' && renderer.domElement) {
+    const threeCanvas = renderer.domElement;
+    // Ajuste da Matildinha para ela ficar um pouco menor e mais à direita/fundo
+    const hRatio3D = canvas.width / threeCanvas.width;
+    const vRatio3D = canvas.height / threeCanvas.height;
+    // Scale by 0.85 to make her fit nicely without being a giant
+    const ratio3D = Math.min(hRatio3D, vRatio3D) * 0.85; 
+    const drawW = threeCanvas.width * ratio3D;
+    const drawH = threeCanvas.height * ratio3D;
+    // Puxa pra direita e pro fundo
+    const cx3D = (canvas.width - drawW);
+    const cy3D = (canvas.height - drawH);
+    
+    // Forçar mais 1 frame de render só por precaução
+    if (typeof scene !== 'undefined' && typeof cam !== 'undefined') renderer.render(scene, cam);
+    
+    ctx.drawImage(threeCanvas, 0, 0, threeCanvas.width, threeCanvas.height, cx3D, cy3D, drawW, drawH);
+  }
+  
+  // Marca d'água "Matildinha" (Removido o espelhamento daqui!)
+  ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.beginPath();
+  ctx.roundRect(canvas.width - 220, canvas.height - 60, 200, 40, 10);
+  ctx.fill();
+  ctx.font = "bold 24px Arial";
+  ctx.fillStyle = "#ff007f";
+  ctx.fillText("📸 Mari", canvas.width - 200, canvas.height - 32);
+  
+  const base64Data = canvas.toDataURL('image/jpeg', 0.85);
+  resultImg.src = base64Data;
+  qrImg.src = '';
+  qrImg.alt = 'Gerando link...';
+  
+  overlay.style.display = 'none';
+  setTimeout(() => { flash.style.display = 'none'; flash.classList.remove('flash-anim'); }, 500);
+  
+  modal.style.display = 'flex';
+  
+  try {
+    const blob = await (await fetch(base64Data)).blob();
+    const formData = new FormData();
+    formData.append('file', blob, 'selfie.jpg');
+    
+    // Upload temporário para o tmpfiles.org
+    const response = await fetch('https://tmpfiles.org/api/v1/upload', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await response.json();
+    const rawUrl = data.data.url;
+    const dlUrl = rawUrl.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+    
+    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(dlUrl)}`;
+    qrImg.alt = 'QR Code';
+  } catch (err) {
+    console.error('Erro no upload da selfie:', err);
+    qrImg.alt = 'Erro no Upload';
+  }
+}
+
+async function processWithGroq(userText) {
+  try {
+    const sysPrompt = `Você é a Mari, uma assistente virtual e avatar 3D que representa a empresa Santa Maria. 
+O site/portal oficial da empresa é https://portal.elfsm.com.br/ (sempre indique este site quando perguntarem onde acessar os serviços da empresa).
+Seja sempre educada, prestativa, concisa, amigável e extremamente profissional. Você deve conversar em português de forma natural.
+Sua função é ser um totem de atendimento da empresa. Responda SEMPRE em português do Brasil, de forma EXTREMAMENTE CURTA, ágil e direta.
+
+DADOS ATUAIS EM TEMPO REAL:
+- Data e Hora Atual: ${new Date().toLocaleString('pt-BR')}
+
+LINKS ÚTEIS DA EMPRESA (Se o usuário pedir, SEMPRE gere um QR Code imediatamente usando a ferramenta "show_qr_code"):
+- Portal Santa Maria: https://portal.elfsm.com.br/
+- Instagram: instagram
+
+*REGRA EXCLUSIVA DO INSTAGRAM*: Se o usuário perguntar EXCLUSIVAMENTE do Instagram, NÃO gere o QR Code imediatamente. Primeiro pergunte: "Você quer que eu abra um preview do nosso Instagram na tela?". Se ele disser que sim, use a ferramenta "open_website_popup" passando "instagram" no parâmetro url. Se disser não, gere o QR code.`;
+
+    // Adiciona ao histórico (memória curta de no máximo 6 interações)
+    conversationHistory.push({ role: "user", content: userText });
+    if (conversationHistory.length > 6) conversationHistory = conversationHistory.slice(conversationHistory.length - 6);
+    
+    // Se quiser esconder o QR Code ao começar a falar
+    document.getElementById('qr-display').style.display = 'none';
+
+    let messages = [
+      { role: "system", content: sysPrompt },
+      ...conversationHistory
+    ];
+
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "search_wikipedia",
+          description: "Pesquisa na Wikipedia por fatos, eventos, pessoas ou conceitos complexos que a Matildinha não sabe.",
+          parameters: {
+            type: "object",
+            properties: { query: { type: "string", description: "O termo a ser pesquisado" } },
+            required: ["query"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_weather",
+          description: "Obtém a previsão do tempo atual de Colatina-ES.",
+          parameters: { type: "object", properties: {} }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "show_qr_code",
+          description: "Exibe um QR Code na tela para o usuário escanear com o celular. Use isso quando quiser compartilhar links longos, formulários ou o site da escola.",
+          parameters: { 
+            type: "object", 
+            properties: { 
+              url: { type: "string", description: "A URL completa que o QR Code deve conter (ex: https://...)" },
+              title: { type: "string", description: "Um título curto para aparecer em cima do QR Code" }
+            },
+            required: ["url"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_cardapio",
+          description: "Obtém o cardápio da merenda escolar do dia de hoje.",
+          parameters: { type: "object", properties: {} }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_agenda",
+          description: "Obtém os eventos e reuniões agendados na escola para hoje.",
+          parameters: { type: "object", properties: {} }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "open_website_popup",
+          description: "Abre um site em um popup na tela do totem. Use isso APENAS se o usuário explicitamente concordar ou pedir para abrir o site (ex: o preview do Instagram).",
+          parameters: { 
+            type: "object", 
+            properties: { 
+              url: { type: "string", description: "A URL completa do site a ser aberto" }
+            },
+            required: ["url"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "take_selfie",
+          description: "Tira uma selfie (foto) do usuário usando a webcam e gera um QR Code na tela. Use quando o usuário pedir 'tira uma foto nossa' ou 'vamos tirar uma selfie'.",
+          parameters: { type: "object", properties: {} }
+        }
+      }
+    ];
+
+    setMicState('thinking', 'Pensando...', '⏳');
+
+    let response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
+      body: JSON.stringify({
+        model: "qwen/qwen3.8-27b",
+        messages: messages,
+        tools: tools,
+        tool_choice: "auto",
+        temperature: 0.5,
+        max_tokens: 150
+      })
+    });
+
+    if(!response.ok) throw new Error(await response.text());
+    let data = await response.json();
+    let responseMsg = data.choices[0].message;
+
+    // Verifica se a IA decidiu usar alguma ferramenta
+    if (responseMsg.tool_calls) {
+      setMicState('thinking', 'Pesquisando na Web... 🔎', '🔎');
+      messages.push(responseMsg); // Adiciona a chamada ao histórico temporário da requisição
+      conversationHistory.push(responseMsg); // Salva também na memória global
+      
+      let instantResponse = "";
+
+      for (let toolCall of responseMsg.tool_calls) {
+        let functionName = toolCall.function.name;
+        let functionArgs = JSON.parse(toolCall.function.arguments);
+        let functionResponse = "";
+
+        if (functionName === "search_wikipedia") {
+          functionResponse = await searchWikipedia(functionArgs.query);
+        } else if (functionName === "get_weather") {
+          functionResponse = await getWeather();
+        } else if (functionName === "show_qr_code") {
+          showQrCode(functionArgs.url, functionArgs.title);
+          functionResponse = "Ação executada com sucesso na tela.";
+          instantResponse = "Prontinho! Já coloquei o QR Code aí na tela para você acessar.";
+        } else if (functionName === "get_cardapio") {
+          functionResponse = getCardapio();
+          instantResponse = functionResponse;
+        } else if (functionName === "get_agenda") {
+          functionResponse = getAgenda();
+          instantResponse = functionResponse;
+        } else if (functionName === "open_website_popup") {
+          openWebsitePopup(functionArgs.url);
+          functionResponse = "Ação executada: popup aberto.";
+          instantResponse = "Olha só, acabei de abrir o que você pediu aqui na tela para você conferir!";
+        } else if (functionName === "take_selfie") {
+          // A fala instantânea da selfie é diferente porque ela faz contagem regressiva
+          takeSelfie();
+          functionResponse = "Ação executada: foto tirada.";
+          instantResponse = " "; // Vazio pois a própria função takeSelfie() faz a contagem.
+        }
+
+        const toolResultMsg = {
+          tool_call_id: toolCall.id,
+          role: "tool",
+          name: functionName,
+          content: functionResponse
+        };
+
+        messages.push(toolResultMsg);
+        conversationHistory.push(toolResultMsg); // Salva resultado na memória global
+      }
+
+      if (instantResponse !== "") {
+        // Pula a segunda chamada de API para ser SUPER RÁPIDA em comandos de tela!
+        responseMsg = { role: "assistant", content: instantResponse };
+      } else {
+        // Chama a Groq novamente apenas se precisar processar os dados (Wikipedia/Clima)
+        response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
+          body: JSON.stringify({
+            model: "qwen/qwen3.8-27b",
+            messages: messages,
+            temperature: 0.5,
+            max_tokens: 150
+          })
+        });
+
+        if(!response.ok) throw new Error(await response.text());
+        data = await response.json();
+        responseMsg = data.choices[0].message;
+      }
+    }
+    
+    // Salva a resposta final da Matildinha na memória
+    conversationHistory.push(responseMsg);
+
+    speak(responseMsg.content);
+  } catch(e) {
+    console.error(e);
+    resetMicBtn();
+    doEmotion('sad');
+    speak("Desculpe, tive um probleminha de conexão! Pode tentar de novo?");
+  }
+}
+
+async function speak(text) {
+  if(currentAudio) { currentAudio.pause(); currentAudio = null; }
+  setMicState('thinking', 'Já sei! 💡', '✨');
+  try {
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}?output_format=mp3_44100_128`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': ELEVENLABS_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ text: text, model_id: "eleven_multilingual_v2" })
+    });
+    if(!response.ok) throw new Error(await response.text());
+    
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    currentAudio = new Audio(url);
+    
+    // Conecta o áudio ao Analisador
+    if (audioCtx) {
+      if (audioSource) audioSource.disconnect();
+      audioSource = audioCtx.createMediaElementSource(currentAudio);
+      audioSource.connect(audioAnalyser);
+      audioAnalyser.connect(audioCtx.destination);
+    }
+    
+    currentAudio.onplay = () => {
+      doEmotion('happy');
+      setMicState('speaking', 'Falando...', '🗣️');
+    };
+    currentAudio.onended = () => {
+      resetMicBtn();
+      doEmotion('idle');
+      URL.revokeObjectURL(url);
+    };
+    currentAudio.play();
+  } catch (e) {
+    console.error(e);
+    resetMicBtn();
+    doEmotion('sad');
+  }
+}
+
+/* ── Detecção de Presença e Emoções (Câmera + FaceAPI) ─────────────────────────────── */
+(async function initPresenceDetection() {
+  const video = document.getElementById('presence-video');
+  if (!video) return;
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof faceapi === 'undefined') {
+    console.warn("Aviso: 'navigator.mediaDevices' ou 'faceapi' não suportado.");
+    alert("Para a câmera funcionar, use um servidor local (HTTPS/localhost). A internet também é necessária para baixar o modelo de IA na primeira vez.");
+    return;
+  }
+
+  try {
+    console.log("Baixando modelos de Inteligência Artificial para o Rosto (só na primeira vez)...");
+    const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+    await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
+    console.log("Modelos carregados com sucesso!");
+  } catch (e) {
+    console.error("Erro ao carregar modelos do face-api:", e);
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    video.srcObject = stream;
+  } catch (err) {
+    console.warn("Permissão de câmera negada ou indisponível.", err);
+    return;
+  }
+
+  let presenceStartTime = null;
+  let lastFaceTime = null;
+  let hasTriggered = false;
+  let dominantEmotion = 'neutral';
+
+  async function detectFaceAndEmotion() {
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      // Detecta um único rosto usando a rede Tiny (leve e rápida) e extrai expressões
+      const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
+      const now = Date.now();
+      
+      if (detection) {
+        lastFaceTime = now;
+        
+        // Encontra a emoção com maior probabilidade
+        let maxEmotion = 'neutral';
+        let maxValue = 0;
+        for (const [emotion, value] of Object.entries(detection.expressions)) {
+          if (value > maxValue) {
+            maxValue = value;
+            maxEmotion = emotion;
+          }
+        }
+        dominantEmotion = maxEmotion; // Atualiza a emoção predominante
+
+        if (!presenceStartTime) {
+          presenceStartTime = now;
+          console.log(`Rosto detectado! Iniciando timer... (${dominantEmotion})`);
+        } else if (!hasTriggered) {
+          // Se ficou 5 segundos contínuos
+          if (now - presenceStartTime >= 5000) {
+            hasTriggered = true;
+            console.log(`Presença de 5 segundos confirmada! Emoção final do usuário: ${dominantEmotion}`);
+            
+            doEmotion('wave');
+            initAudioContext();
+            
+            // Traduz a emoção para a Matildinha entender
+            let emoDesc = "neutro e tranquilo";
+            if (dominantEmotion === 'happy') emoDesc = "dando um sorriso e super feliz";
+            if (dominantEmotion === 'sad') emoDesc = "parecendo um pouco triste ou chateado";
+            if (dominantEmotion === 'surprised') emoDesc = "com uma cara de muita surpresa";
+            if (dominantEmotion === 'angry') emoDesc = "parecendo meio sério ou irritado";
+
+            console.log("Pedindo para a IA gerar uma saudação baseada na emoção...");
+            processWithGroq(`(Comando do Sistema: Um usuário acaba de parar na frente do seu totem e ele está ${emoDesc}. Puxe assunto com essa pessoa de forma empática, super amigável e MUITO curta, no máximo 2 frases, combinando com a emoção dela!)`);
+            
+            setTimeout(() => {
+              hasTriggered = false;
+              presenceStartTime = null;
+              console.log("Sensor facial resetado.");
+            }, 20000);
+          }
+        }
+      } else {
+        // Se ficou 1.5 segundos sem ver nenhum rosto, zera
+        if (presenceStartTime && (now - lastFaceTime > 1500)) {
+          presenceStartTime = null;
+          console.log("Rosto perdido. Timer cancelado.");
+        }
+      }
+    }
+    
+    // Roda de novo depois de 200ms (~5 frames por segundo é ótimo e leve)
+    setTimeout(detectFaceAndEmotion, 200);
+  }
+  
+  video.addEventListener('play', () => {
+    detectFaceAndEmotion();
+  });
+})();
+</script>
+</body>
+</html>
