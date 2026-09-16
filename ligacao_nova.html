@@ -429,12 +429,12 @@ const screens = [
   title:"Onde você precisa de energia?",
   sub:"Escolha a forma mais fácil para você",
   content:`
-    <div class="card selected" onclick="selectCard(this)"><span class="ico">📍</span><div class="txt"><b>Usar minha localização</b><small>Mais rápido, via GPS do aparelho</small></div><span class="check"></span></div>
+    <div class="card selected" id="gps-btn" onclick="getLocation(this)"><span class="ico">📍</span><div class="txt"><b>Usar minha localização</b><small id="gps-status">Mais rápido, via GPS do aparelho</small></div><span class="check"></span></div>
     <div class="card" onclick="selectCard(this)"><span class="ico">⌨️</span><div class="txt"><b>Digitar endereço</b><small>CEP, rua e número</small></div><span class="check"></span></div>
     <div class="card" onclick="selectCard(this)"><span class="ico">🗺️</span><div class="txt"><b>Marcar no mapa</b><small>Ideal para zona rural</small></div><span class="check"></span></div>
-    <div class="frame-photo" style="height:120px;margin-top:6px;">
+    <div class="frame-photo" style="height:120px;margin-top:6px;display:none;" id="map-frame">
       <span class="big">🗺️</span>
-      <span>Mapa com o ponto marcado automaticamente</span>
+      <span id="map-text">Buscando...</span>
     </div>
     <div class="banner warn"><b>Sem número ou endereço formal?</b>Sem problema. Marque o imóvel no mapa e informe um ponto de referência.</div>
   `,
@@ -463,7 +463,7 @@ const screens = [
   content:`
     <div class="field">
       <label>CPF / CNPJ</label>
-      <div class="box editable">123.456.789-00</div>
+      <input type="text" id="input-cpf" class="box editable" style="width:100%;font-family:inherit;" placeholder="123.456.789-00">
     </div>
     <div class="banner success"><b>Encontramos seus dados</b>Confira se estão corretos antes de continuar.</div>
     <div class="row-list">
@@ -471,7 +471,11 @@ const screens = [
       <div class="row-item"><span class="k">Telefone</span><span class="v">(27) 9 9999-0000</span></div>
       <div class="row-item"><span class="k">E-mail</span><span class="v">maria@email.com</span></div>
     </div>
-    <div class="card" onclick="selectCard(this)"><span class="ico">🤳</span><div class="txt"><b>Selfie com prova de vida</b><small>Recomendado, confirma sua identidade</small></div><span class="check"></span></div>
+    
+    <label for="selfie-upload" class="card" onclick="selectCard(this)">
+      <span class="ico">🤳</span><div class="txt"><b>Selfie com prova de vida</b><small id="selfie-status">Toque para tirar foto</small></div><span class="check"></span>
+    </label>
+    <input type="file" id="selfie-upload" accept="image/*" capture="user" style="display:none;" onchange="document.getElementById('selfie-status').innerText='Foto anexada ✓';document.getElementById('selfie-status').style.color='var(--verde)';">
   `,
   footer:`<button class="btn btn-primary" onclick="go(4)">Confirmar dados</button>`,
   spec:{
@@ -999,6 +1003,7 @@ function signNow(el){
 
 function go(i){
   const s = screens[i];
+  if(!s) return;
   document.querySelectorAll('.rail-item').forEach((el,idx)=>el.classList.toggle('active', idx===i));
 
   let headerHtml = '';
@@ -1024,27 +1029,53 @@ function go(i){
       <div class="app-footer">${s.footer}</div>
     `;
     phoneBody.style.opacity = 1;
+    window.parent.postMessage({ type: 'LIGACAO_NOVA_STEP', step: i, title: s.nav }, '*');
   }, 90);
 
   const sp = s.spec;
-  let rulesHtml = '';
-  if(sp.rules && sp.rules.length){
-    rulesHtml = `<div class="spec-block"><h3>Regras de negócio aplicadas</h3><ul class="rn-list">
-      ${sp.rules.map(r=>`<li><b>${r[0]}</b>${r[1]}</li>`).join('')}
-    </ul></div>`;
-  }
-  let quoteHtml = sp.quote ? `<div class="spec-block"><h3>Pergunta ao cliente</h3><p class="quote">“${sp.quote}”</p></div>` : '';
-  let bpHtml = sp.bp ? `<div class="spec-block"><h3>Boa prática de mercado incorporada</h3><div class="bp"><span class="tag">Benchmark</span><br>${sp.bp}</div></div>` : '';
+  if(sp) {
+    let rulesHtml = '';
+    if(sp.rules && sp.rules.length){
+      rulesHtml = `<div class="spec-block"><h3>Regras de negócio aplicadas</h3><ul class="rn-list">
+        ${sp.rules.map(r=>`<li><b>${r[0]}</b>${r[1]}</li>`).join('')}
+      </ul></div>`;
+    }
+    let quoteHtml = sp.quote ? `<div class="spec-block"><h3>Pergunta ao cliente</h3><p class="quote">“${sp.quote}”</p></div>` : '';
+    let bpHtml = sp.bp ? `<div class="spec-block"><h3>Boa prática de mercado incorporada</h3><div class="bp"><span class="tag">Benchmark</span><br>${sp.bp}</div></div>` : '';
 
-  document.getElementById('specPanel').innerHTML = `
-    <span class="spec-code">${s.code}</span>
-    <h2>${s.nav}</h2>
-    <p class="obj">${sp.obj}</p>
-    ${quoteHtml}
-    ${rulesHtml}
-    ${bpHtml}
-  `;
+    document.getElementById('specPanel').innerHTML = `
+      <span class="spec-code">${s.code}</span>
+      <h2>${s.nav}</h2>
+      <p class="obj">${sp.obj}</p>
+      ${quoteHtml}
+      ${rulesHtml}
+      ${bpHtml}
+    `;
+  }
 }
+
+// Lógica de GPS Mock
+function getLocation(btn) {
+  selectCard(btn);
+  document.getElementById('map-frame').style.display = 'flex';
+  document.getElementById('gps-status').innerText = 'Buscando satélites...';
+  setTimeout(() => {
+    document.getElementById('map-text').innerText = 'Localização encontrada: Colatina-ES';
+    document.getElementById('gps-status').innerText = 'Localização confirmada ✓';
+    document.getElementById('gps-status').style.color = 'var(--verde)';
+  }, 1500);
+}
+
+// Comunicação com a Mari
+window.addEventListener('message', (event) => {
+  const data = event.data;
+  if (data && data.action === 'go') {
+    go(data.step);
+  } else if (data && data.action === 'fill') {
+    const el = document.getElementById(data.fieldId);
+    if (el) el.value = data.value;
+  }
+});
 
 document.getElementById('phoneBody').style.transition = 'opacity .12s ease';
 go(0);

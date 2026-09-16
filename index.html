@@ -884,11 +884,13 @@ Seja sempre educada, prestativa, concisa, amigável e extremamente profissional.
 Sua função é ser um totem de atendimento da empresa. Responda SEMPRE em português do Brasil, de forma EXTREMAMENTE CURTA, ágil e direta.
 
 ESPECIALISTA EM LIGAÇÃO NOVA DIGITAL:
-Você é especialista na "Jornada Digital de Ligação Nova". Se o cliente perguntar como pedir energia, explique que o processo é 100% digital, fácil e sem burocracia.
-- Não precisa saber endereço (pode usar o GPS do celular).
-- Não precisa calcular potência (o cliente só marca os eletrodomésticos, nós calculamos).
-- O cliente só precisa de 1 documento de posse e uma selfie (prova de vida).
-- Se o cliente disser que quer "iniciar", "fazer", ou "pedir" uma Ligação Nova (ou pedir energia nova), VOCÊ DEVE IMEDIATAMENTE usar a ferramenta "open_website_popup" passando a URL exata "ligacao_nova.html". Diga apenas: "Vou abrir a tela para você começar agora mesmo!"
+Você é especialista na "Jornada Digital de Ligação Nova".
+Se o cliente disser que quer "iniciar", "fazer" ou "pedir" energia:
+1. IMEDIATAMENTE use "open_website_popup" com "ligacao_nova.html". Diga: "Vou abrir a tela para começarmos!"
+2. O usuário pode preencher a tela sozinho tocando nela, ou ir te falando.
+3. Se o usuário falar os dados (ex: "Meu CPF é 123"), use a ferramenta "fill_field" com fieldId: "input-cpf", e diga "Preenchi para você".
+4. Se o usuário pedir para avançar, use "navigate_step" com a tela desejada (ex: 2, 4, 7, 9).
+O fluxo é simples, direto e 100% digital. Tente guiar o usuário de forma super amigável.
 
 DADOS ATUAIS EM TEMPO REAL:
 - Data e Hora Atual: \${new Date().toLocaleString('pt-BR')}
@@ -984,6 +986,33 @@ LINKS ÚTEIS DA EMPRESA (Se o usuário pedir, SEMPRE gere um QR Code imediatamen
           description: "Tira uma selfie (foto) do usuário usando a webcam e gera um QR Code na tela. Use quando o usuário pedir 'tira uma foto nossa' ou 'vamos tirar uma selfie'.",
           parameters: { type: "object", properties: {} }
         }
+      },
+      {
+        type: "function",
+        function: {
+          name: "navigate_step",
+          description: "Avança a tela da jornada de Ligação Nova para um passo específico.",
+          parameters: { 
+            type: "object", 
+            properties: { step: { type: "integer", description: "O número da tela (ex: 1, 2, 4, 7, 9)" } },
+            required: ["step"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "fill_field",
+          description: "Preenche um campo de texto na tela de Ligação Nova.",
+          parameters: { 
+            type: "object", 
+            properties: { 
+              fieldId: { type: "string", description: "O ID do campo (ex: 'input-cpf')" },
+              value: { type: "string", description: "O valor para preencher" }
+            },
+            required: ["fieldId", "value"]
+          }
+        }
       }
     ];
 
@@ -1042,6 +1071,16 @@ LINKS ÚTEIS DA EMPRESA (Se o usuário pedir, SEMPRE gere um QR Code imediatamen
           takeSelfie();
           functionResponse = "Ação executada: foto tirada.";
           instantResponse = " "; // Vazio pois a própria função takeSelfie() faz a contagem.
+        } else if (functionName === "navigate_step") {
+          const iframe = document.getElementById('phone-iframe');
+          if (iframe && iframe.contentWindow) iframe.contentWindow.postMessage({ action: 'go', step: functionArgs.step }, '*');
+          functionResponse = "Avançou de tela.";
+          instantResponse = "Pronto, avancei a tela para você!";
+        } else if (functionName === "fill_field") {
+          const iframe = document.getElementById('phone-iframe');
+          if (iframe && iframe.contentWindow) iframe.contentWindow.postMessage({ action: 'fill', fieldId: functionArgs.fieldId, value: functionArgs.value }, '*');
+          functionResponse = "Campo preenchido.";
+          instantResponse = "Já preenchi o campo ali na tela para você.";
         }
 
         const toolResultMsg = {
