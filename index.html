@@ -485,7 +485,7 @@ loader.load('mari.glb', (gltf) => {
   // FIX DEFINITIVO: O GLB tem exatamente 1 metro (de -0.5 a 0.5)
   // Vamos dobrar o tamanho para 2 metros e posicionar os pés no chão da tela.
   model.scale.setScalar(2.0); 
-  model.position.set(0, -0.1, 0); 
+  model.position.set(0, -0.9, 0); 
   
   scene.add(model);
   
@@ -531,8 +531,8 @@ function animate(){
   if(mixer) mixer.update(dt);
   
   if(model) {
-    // 90 graus (Math.PI / 2) deve deixá-la de frente para a câmera
-    model.rotation.y += ((Math.PI / 2) + mouseX * 0.6 - model.rotation.y) * 4 * dt;
+    // -90 graus (-Math.PI / 2) deve deixá-la perfeitamente de frente
+    model.rotation.y += (-(Math.PI / 2) + mouseX * 0.6 - model.rotation.y) * 4 * dt;
   }
   
   // Sincronia Labial (Balanço de Cabeça baseado no Volume)
