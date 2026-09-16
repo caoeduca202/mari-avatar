@@ -15,31 +15,31 @@
       --primary: #5b9cff;
       --secondary: #a78bfa;
       --accent: #f472b6;
-      --bg-dark: #0f172a;
-      --glass-bg: rgba(15, 23, 42, 0.4);
-      --glass-border: rgba(255, 255, 255, 0.1);
+      --bg-dark: #F5F6FB;
+      --glass-bg: rgba(255, 255, 255, 0.6);
+      --glass-border: rgba(26, 31, 113, 0.1);
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       width: 100%; height: 100%; overflow: hidden;
       background: var(--bg-dark);
       font-family: 'Outfit', sans-serif;
-      color: #fff;
+      color: #151834;
     }
 
     /* ── Animated Background ───────────────────────────────────────────── */
     .bg-mesh {
       position: fixed; inset: 0; z-index: 0;
-      background: #060d1c;
+      background: #F5F6FB;
       overflow: hidden;
     }
     .blob {
       position: absolute; filter: blur(90px); opacity: 0.6;
       animation: float 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: rgba(91, 156, 255, 0.4); }
-    .blob-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: rgba(167, 139, 250, 0.3); animation-delay: -5s; }
-    .blob-3 { top: 40%; left: 30%; width: 40vw; height: 40vw; background: rgba(244, 114, 182, 0.2); animation-delay: -10s; }
+    .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: rgba(26, 31, 113, 0.15); }
+    .blob-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: rgba(247, 182, 0, 0.15); animation-delay: -5s; }
+    .blob-3 { top: 40%; left: 30%; width: 40vw; height: 40vw; background: rgba(26, 31, 113, 0.1); animation-delay: -10s; }
     @keyframes float {
       0% { transform: translate(0, 0) scale(1); }
       50% { transform: translate(5%, 10%) scale(1.1); }
@@ -51,7 +51,7 @@
     #ground-glow {
       position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
       width: 800px; height: 120px;
-      background: radial-gradient(ellipse, rgba(91, 156, 255, 0.25) 0%, transparent 60%);
+      background: radial-gradient(ellipse, rgba(26, 31, 113, 0.1) 0%, transparent 60%);
       z-index: 2; pointer-events: none;
     }
 
@@ -75,7 +75,7 @@
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
     #header-glass p {
-      font-size: clamp(0.75rem, 1.2vw, 0.9rem); color: #94a3b8;
+      font-size: clamp(0.75rem, 1.2vw, 0.9rem); color: #5B5F82;
       margin-top: 4px; font-weight: 400; letter-spacing: 0.02em;
     }
 
@@ -91,7 +91,7 @@
       position: absolute;
       width: clamp(280px, 45vh, 450px); height: clamp(280px, 45vh, 450px);
       border-radius: 50%;
-      background: radial-gradient(ellipse, rgba(91, 156, 255, 0.15) 0%, transparent 70%);
+      background: radial-gradient(ellipse, rgba(247, 182, 0, 0.15) 0%, transparent 70%);
       top: 50%; left: 50%; transform: translate(-50%, -48%);
       z-index: -1; animation: aura-pulse 4s ease-in-out infinite; pointer-events: none;
     }
@@ -107,7 +107,7 @@
       transition: all 0.3s ease;
     }
     #status-text {
-      font-size: 1.1rem; font-weight: 600; color: #e2e8f0;
+      font-size: 1.1rem; font-weight: 600; color: #1A1F71;
       white-space: nowrap; transition: color 0.3s;
     }
     
@@ -170,7 +170,7 @@
       display: none; flex-direction: column; align-items: center; gap: 10px;
     }
     #qr-display h3 {
-      font-size: 1.1rem; font-weight: 600; color: #e2e8f0; margin-bottom: 5px;
+      font-size: 1.1rem; font-weight: 600; color: #1A1F71; margin-bottom: 5px;
     }
     #qr-display img {
       border-radius: 8px; width: 150px; height: 150px;
@@ -196,7 +196,7 @@
       width: 120px; height: 25px; background: #1f2937; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
     }
     #phone-close {
-      position: absolute; right: 15px; top: 12px; color: #fff; cursor: pointer; font-size: 1.2rem; font-weight: bold; background: rgba(255,255,255,0.2); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; line-height: 1;
+      position: absolute; right: 15px; top: 12px; color: #1A1F71; cursor: pointer; font-size: 1.2rem; font-weight: bold; background: rgba(255,255,255,0.2); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; line-height: 1;
     }
     #phone-close:hover { background: rgba(255,255,255,0.4); }
     #phone-iframe {
@@ -485,7 +485,7 @@ loader.load('mari.glb', (gltf) => {
   // FIX DEFINITIVO: O GLB tem exatamente 1 metro (de -0.5 a 0.5)
   // Vamos dobrar o tamanho para 2 metros e posicionar os pés no chão da tela.
   model.scale.setScalar(2.0); 
-  model.position.set(0, -1.0, 0); 
+  model.position.set(0, -0.3, 0); 
   
   scene.add(model);
   
@@ -531,7 +531,7 @@ function animate(){
   if(mixer) mixer.update(dt);
   
   if(model) {
-    model.rotation.y += (mouseX * 0.6 - model.rotation.y) * 4 * dt;
+    model.rotation.y += (Math.PI + mouseX * 0.6 - model.rotation.y) * 4 * dt;
   }
   
   // Sincronia Labial (Balanço de Cabeça baseado no Volume)
