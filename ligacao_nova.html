@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ELFSM — Protótipo · Jornada Digital de Ligação Nova</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --azul:#1A1F71;
+    --azul-2:#2A3199;
+    --amarelo:#F7B600;
+    --amarelo-escuro:#B98300;
+    --branco:#FFFFFF;
+    --texto:#151834;
+    --texto-suave:#5B5F82;
+    --linha:#E3E4F1;
+    --fundo-suave:#F5F6FB;
+    --verde:#1F8A57;
+    --vermelho:#D64545;
+    --sombra: 0 1px 2px rgba(21,24,52,.06);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--branco);
+    color:var(--texto);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{font-family:'Outfit',system-ui,sans-serif;}
+
+  /* ---------- topbar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 32px;
+    border-bottom:1px solid var(--linha);
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:38px;height:38px;border-radius:10px;
+    background:var(--azul);
+    position:relative;
+    flex:none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .brand-mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .brand-text{line-height:1.15;}
+  .brand-text strong{display:block;font-family:'Outfit';font-size:16px;font-weight:700;color:var(--azul);}
+  .brand-text span{display:block;font-size:12.5px;color:var(--texto-suave);}
+  .topbar-right{font-size:13px;color:var(--texto-suave);text-align:right;}
+  .topbar-right b{color:var(--azul);font-weight:600;}
+
+  /* ---------- layout ---------- */
+  .layout{
+    display:grid;
+    grid-template-columns:250px minmax(320px,380px) 1fr;
+    gap:0;
+    min-height:calc(100vh - 76px);
+  }
+
+  /* ---------- rail ---------- */
+  .rail{
+    border-right:1px solid var(--linha);
+    padding:24px 14px;
+    overflow-y:auto;
+  }
+  .rail-label{
+    font-size:11.5px;color:var(--texto-suave);
+    padding:0 10px 10px;
+    letter-spacing:.01em;
+  }
+  .rail-item{
+    display:flex;align-items:flex-start;gap:10px;
+    width:100%;text-align:left;
+    padding:9px 10px;border-radius:10px;
+    border:none;background:none;cursor:pointer;
+    font-family:'Inter';font-size:13.5px;color:var(--texto);
+    margin-bottom:2px;
+    transition:background .15s ease;
+  }
+  .rail-item:hover{background:var(--fundo-suave);}
+  .rail-item.active{background:var(--azul);color:#fff;}
+  .rail-num{
+    flex:none;width:22px;height:22px;border-radius:50%;
+    background:var(--fundo-suave);color:var(--texto-suave);
+    font-size:11px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;
+    margin-top:1px;
+  }
+  .rail-item.active .rail-num{background:var(--amarelo);color:var(--azul);}
+  .rail-item-text b{display:block;font-weight:600;line-height:1.3;}
+  .rail-item-text small{display:block;font-size:11px;opacity:.8;margin-top:1px;}
+
+  /* ---------- phone stage ---------- */
+  .stage{
+    display:flex;align-items:center;justify-content:center;
+    padding:36px 24px;
+    background:var(--fundo-suave);
+  }
+  .phone{
+    width:320px;height:660px;
+    background:#0d0f24;
+    border-radius:42px;
+    padding:12px;
+    box-shadow:0 20px 45px rgba(21,24,52,.18);
+  }
+  .phone-screen{
+    width:100%;height:100%;
+    background:var(--branco);
+    border-radius:32px;
+    overflow:hidden;
+    display:flex;flex-direction:column;
+    position:relative;
+  }
+  .statusbar{
+    height:30px;flex:none;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 22px;font-size:11.5px;font-weight:600;color:var(--texto);
+  }
+  .app-header{
+    flex:none;padding:6px 20px 14px;
+    border-bottom:1px solid var(--linha);
+  }
+  .app-header .stepline{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .stepline .back{
+    width:26px;height:26px;border-radius:50%;
+    background:var(--fundo-suave);
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;color:var(--azul);
+  }
+  .stepline .count{font-size:11px;color:var(--texto-suave);font-weight:600;}
+  .track{height:4px;border-radius:3px;background:var(--linha);overflow:hidden;}
+  .track-fill{height:100%;background:var(--amarelo);border-radius:3px;transition:width .5s ease;}
+  .app-header h2{margin:12px 0 2px;font-size:18px;line-height:1.3;color:var(--texto);}
+  .app-header p{margin:0;font-size:12.5px;color:var(--texto-suave);}
+
+  .app-content{
+    flex:1;overflow-y:auto;padding:16px 20px 10px;
+  }
+  .app-footer{
+    flex:none;padding:14px 20px 18px;border-top:1px solid var(--linha);
+    background:var(--branco);
+  }
+
+  .btn{
+    display:flex;align-items:center;justify-content:center;
+    width:100%;padding:13px 16px;border-radius:12px;
+    font-family:'Inter';font-weight:600;font-size:14px;
+    border:none;cursor:pointer;
+  }
+  .btn-primary{background:var(--azul);color:#fff;}
+  .btn-primary:active{background:var(--azul-2);}
+  .btn-ghost{background:none;color:var(--azul);font-weight:600;font-size:13px;padding:8px;}
+
+  .card{
+    border:1px solid var(--linha);border-radius:12px;
+    padding:12px 13px;margin-bottom:9px;
+    display:flex;align-items:center;gap:11px;
+    cursor:pointer;background:var(--branco);
+  }
+  .card.selected{border-color:var(--azul);background:#F1F2FC;}
+  .card .ico{font-size:19px;flex:none;width:30px;text-align:center;}
+  .card .txt b{display:block;font-size:13.5px;font-weight:600;}
+  .card .txt small{display:block;font-size:11.5px;color:var(--texto-suave);margin-top:1px;}
+  .card .check{
+    margin-left:auto;width:18px;height:18px;border-radius:50%;
+    border:1.6px solid var(--linha);flex:none;
+  }
+  .card.selected .check{border-color:var(--azul);background:var(--azul);position:relative;}
+  .card.selected .check::after{
+    content:"";position:absolute;left:5px;top:2px;width:4px;height:8px;
+    border-right:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(40deg);
+  }
+
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:11.5px;font-weight:600;color:var(--texto-suave);margin-bottom:5px;}
+  .field .box{
+    border:1px solid var(--linha);border-radius:10px;padding:11px 12px;
+    font-size:13.5px;color:var(--texto);background:var(--fundo-suave);
+  }
+  .field .box.editable{background:var(--branco);}
+
+  .banner{
+    border-radius:12px;padding:12px 13px;font-size:12.5px;line-height:1.5;margin-bottom:12px;
+  }
+  .banner.info{background:#EEF0FC;color:var(--azul);}
+  .banner.success{background:#EAF6EF;color:var(--verde);}
+  .banner.warn{background:#FFF4E0;color:var(--amarelo-escuro);}
+  .banner.alert{background:#FCEAEA;color:var(--vermelho);}
+  .banner b{display:block;margin-bottom:2px;font-weight:700;}
+
+  .chiprow{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
+  .chip{
+    border:1px solid var(--linha);border-radius:999px;padding:6px 12px;
+    font-size:12px;font-weight:600;color:var(--texto-suave);
+  }
+  .chip.on{background:var(--amarelo);border-color:var(--amarelo);color:var(--azul);}
+
+  .stat-big{
+    text-align:center;padding:18px 10px 14px;
+  }
+  .stat-big .num{font-family:'Outfit';font-size:38px;font-weight:700;color:var(--azul);}
+  .stat-big .unit{font-size:13px;color:var(--texto-suave);}
+
+  .row-list{border:1px solid var(--linha);border-radius:12px;overflow:hidden;margin-bottom:10px;}
+  .row-item{
+    display:flex;align-items:center;gap:10px;padding:10px 13px;
+    border-bottom:1px solid var(--linha);font-size:12.5px;
+  }
+  .row-item:last-child{border-bottom:none;}
+  .row-item .k{color:var(--texto-suave);}
+  .row-item .v{margin-left:auto;font-weight:600;text-align:right;}
+
+  .doclist .row-item .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .dot.ok{background:var(--verde);}
+  .dot.pending{background:var(--amarelo);}
+  .dot.bad{background:var(--vermelho);}
+
+  .frame-photo{
+    border:2px dashed var(--azul);border-radius:14px;
+    height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:6px;color:var(--azul);font-size:12px;font-weight:600;margin-bottom:12px;
+    background:repeating-linear-gradient(135deg, #F1F2FC 0 10px, #FBFBFE 10px 20px);
+  }
+  .frame-photo .big{font-size:26px;}
+
+  .signature-pad{
+    border:1.6px dashed var(--linha);border-radius:12px;height:70px;
+    display:flex;align-items:center;justify-content:center;margin-bottom:12px;
+    color:var(--texto-suave);font-size:12px;
+  }
+  .signature-pad.done{border-style:solid;border-color:var(--verde);color:var(--verde);font-weight:600;background:#EAF6EF;}
+
+  .status-track{list-style:none;margin:0 0 8px;padding:0;}
+  .status-track li{
+    display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--linha);
+  }
+  .status-track li:last-child{border-bottom:none;}
+  .status-track .em{font-size:16px;}
+  .status-track b{display:block;font-size:12.5px;}
+  .status-track small{display:block;font-size:11px;color:var(--texto-suave);}
+  .status-track li.current b{color:var(--azul);}
+  .status-track li.done .em{opacity:.55;}
+  .status-track li.todo{opacity:.45;}
+
+  .celebrate{
+    text-align:center;padding:26px 8px 8px;
+  }
+  .celebrate .bolt{font-size:44px;}
+  .celebrate h2{margin:8px 0 4px;color:var(--azul);}
+
+  .stepper-qty{display:flex;align-items:center;gap:8px;}
+  .stepper-qty button{
+    width:24px;height:24px;border-radius:7px;border:1px solid var(--linha);
+    background:var(--branco);color:var(--azul);font-weight:700;cursor:pointer;font-size:14px;
+    line-height:1;
+  }
+  .stepper-qty span{font-weight:600;font-size:13px;min-width:14px;text-align:center;}
+
+  /* ---------- spec panel ---------- */
+  .spec{
+    padding:30px 34px;overflow-y:auto;
+  }
+  .spec-code{
+    display:inline-block;background:var(--azul);color:#fff;font-family:'Outfit';
+    font-weight:600;font-size:12.5px;padding:4px 11px;border-radius:7px;margin-bottom:12px;
+  }
+  .spec h2{font-size:23px;margin:0 0 6px;color:var(--texto);}
+  .spec .obj{font-size:14px;color:var(--texto-suave);margin-bottom:20px;max-width:60ch;line-height:1.6;}
+  .spec-block{margin-bottom:22px;max-width:62ch;}
+  .spec-block h3{
+    font-size:12px;color:var(--texto-suave);font-weight:700;margin:0 0 9px;
+    padding-bottom:7px;border-bottom:1px solid var(--linha);
+  }
+  .quote{
+    font-family:'Outfit';font-size:16px;color:var(--azul);font-weight:600;
+    padding:12px 15px;background:var(--fundo-suave);border-radius:10px;margin:0;
+  }
+  .rn-list{list-style:none;margin:0;padding:0;}
+  .rn-list li{
+    font-size:13px;line-height:1.6;padding:7px 0 7px 20px;position:relative;
+    border-bottom:1px solid var(--linha);
+  }
+  .rn-list li:last-child{border-bottom:none;}
+  .rn-list li::before{
+    content:"";position:absolute;left:0;top:14px;width:7px;height:7px;border-radius:50%;
+    background:var(--amarelo);
+  }
+  .rn-list b{color:var(--azul);font-weight:700;margin-right:5px;}
+  .bp{font-size:13px;line-height:1.6;color:var(--texto);}
+  .bp .tag{
+    display:inline-block;font-size:11px;font-weight:700;color:var(--amarelo-escuro);
+    background:#FFF4DA;padding:2px 8px;border-radius:6px;margin-bottom:6px;
+  }
+
+  @media (max-width:1080px){
+    .layout{grid-template-columns:1fr;}
+    .rail{display:flex;overflow-x:auto;border-right:none;border-bottom:1px solid var(--linha);padding:14px;}
+    .rail-label{display:none;}
+    .rail-item{flex:none;width:auto;white-space:nowrap;}
+    .rail-item-text small{display:none;}
+    .stage{padding:28px 12px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">
+      <img src="https://portal.elfsm.com.br/wp-content/uploads/2018/06/cropped-icone.png" alt="Logo ELFSM">
+    </div>
+    <div class="brand-text">
+      <strong>ELFSM</strong>
+      <span>Luz e Força Santa Maria</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    Protótipo interativo <b>· Jornada Digital de Ligação Nova</b><br>
+    Portal e Aplicativo do Cliente — v1.0
+  </div>
+</div>
+
+<div class="layout">
+  <nav class="rail" id="rail">
+    <div class="rail-label">Etapas da jornada</div>
+  </nav>
+
+  <div class="stage">
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="statusbar">
+          <span>9:41</span>
+          <span>●●●●&nbsp;&nbsp;LTE&nbsp;&nbsp;🔋</span>
+        </div>
+        <div id="phoneBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spec" id="specPanel"></div>
+</div>
+
+<script>
+const screens = [
+
+/* 0 ---------------------------------------------------------- */
+{
+  code:"Início",
+  nav:"Boas-vindas",
+  navSub:"Ponto de entrada",
+  header:false,
+  content:`
+    <div style="padding:34px 22px 0;text-align:center;">
+      <div style="font-size:40px;">⚡</div>
+      <h2 style="margin:14px 0 6px;font-size:21px;">Peça sua energia sem sair de casa</h2>
+      <p style="font-size:13px;color:var(--texto-suave);line-height:1.6;margin:0 0 22px;">
+        Responda em linguagem simples. A ELFSM cuida da parte técnica para você.
+      </p>
+    </div>
+    <div style="padding:0 22px;">
+      <div class="row-list">
+        <div class="row-item"><span class="k">⏱ Tempo médio</span><span class="v">12 min</span></div>
+        <div class="row-item"><span class="k">📷 Você vai precisar de</span><span class="v">documento + fotos</span></div>
+        <div class="row-item"><span class="k">📶 Acompanhamento</span><span class="v">tempo real</span></div>
+      </div>
+    </div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(1)">Começar agora</button>`,
+  spec:{
+    obj:"Porta de entrada da jornada. Reforça o princípio central do documento: o cliente descreve sua necessidade em linguagem comum e o sistema é quem traduz isso em requisitos técnicos.",
+    quote:null,
+    rules:[],
+    bp:"Este documento consolida a especificação funcional da jornada de Ligação Nova da ELFSM (Portal e Aplicativo), com base em benchmark nacional (EDP, Enel, Copel), internacional (National Grid, distribuidoras norte-americanas) e práticas de onboarding digital de bancos, fintechs e gov.br."
+  }
+},
+
+/* 1 — LN-001 --------------------------------------------------- */
+{
+  code:"LN-001",
+  nav:"Identificação do serviço",
+  navSub:"Tela 1 de 14",
+  progress:7,
+  count:"1 de 14",
+  title:"O que você precisa fazer?",
+  sub:"Toque na opção que melhor descreve sua situação",
+  content:`
+    <div class="card selected" onclick="selectCard(this)"><span class="ico">🔌</span><div class="txt"><b>Primeira ligação</b><small>Nunca teve energia neste imóvel</small></div><span class="check"></span></div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">🔁</span><div class="txt"><b>Reativação</b><small>Já teve ligação, está desligada</small></div><span class="check"></span></div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">📈</span><div class="txt"><b>Aumento de carga</b><small>Já ligado, quer mais potência</small></div><span class="check"></span></div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">🏗</span><div class="txt"><b>Ligação provisória</b><small>Obra ou evento temporário</small></div><span class="check"></span></div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">🏢</span><div class="txt"><b>Várias unidades</b><small>Condomínio ou loteamento</small></div><span class="check"></span></div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">☀️</span><div class="txt"><b>Geração própria</b><small>Energia solar ou outra fonte</small></div><span class="check"></span></div>
+    <div class="banner info" style="margin-top:8px;"><b>Já encontramos algo</b>Não localizamos nenhuma instalação anterior neste CPF ou endereço. Tudo certo para seguir com a Ligação Nova.</div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(2)">Continuar</button>`,
+  spec:{
+    obj:"Garantir que o cliente entra no serviço correto, evitando abertura indevida de Ligação Nova quando já existe uma unidade consumidora no local.",
+    quote:"O que você precisa fazer?",
+    rules:[
+      ["RN-001","Pesquisar automaticamente UCs existentes associadas ao endereço, coordenada e dados cadastrais antes de confirmar Ligação Nova."],
+      ["RN-002","Se houver UC ativa no local, sugerir automaticamente o serviço adequado (ex.: alteração de carga)."],
+      ["RN-003","Se houver UC desligada anteriormente, alertar que pode se tratar de Reativação."]
+    ],
+    bp:"Seleção visual em cards, como em onboarding de apps, em vez de menu de texto — reduz erro de digitação e agiliza a escolha."
+  }
+},
+
+/* 2 — LN-002 --------------------------------------------------- */
+{
+  code:"LN-002",
+  nav:"Localização do imóvel",
+  navSub:"Tela 2 de 14",
+  progress:14,
+  count:"2 de 14",
+  title:"Onde você precisa de energia?",
+  sub:"Escolha a forma mais fácil para você",
+  content:`
+    <div class="card selected" onclick="selectCard(this)"><span class="ico">📍</span><div class="txt"><b>Usar minha localização</b><small>Mais rápido, via GPS do aparelho</small></div><span class="check"></span></div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">⌨️</span><div class="txt"><b>Digitar endereço</b><small>CEP, rua e número</small></div><span class="check"></span></div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">🗺️</span><div class="txt"><b>Marcar no mapa</b><small>Ideal para zona rural</small></div><span class="check"></span></div>
+    <div class="frame-photo" style="height:120px;margin-top:6px;">
+      <span class="big">🗺️</span>
+      <span>Mapa com o ponto marcado automaticamente</span>
+    </div>
+    <div class="banner warn"><b>Sem número ou endereço formal?</b>Sem problema. Marque o imóvel no mapa e informe um ponto de referência.</div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(3)">Confirmar local</button>`,
+  spec:{
+    obj:"Georreferenciar corretamente o ponto de atendimento, mesmo quando não existe endereço formal — situação comum em área rural.",
+    quote:"Onde você precisa de energia?",
+    rules:[
+      ["RN-004","Na inexistência de endereço formal, a coordenada geográfica deve permitir a continuidade do atendimento."],
+      ["RN-005","Não impedir o atendimento rural apenas pela ausência de CEP, rua ou número."],
+      ["RN-006","Sugerir automaticamente rede mais próxima, poste, transformador e UCs vizinhas via GIS."]
+    ],
+    bp:"Botões “Usar minha localização”, “Digitar endereço” e “Marcar no mapa”, replicando o padrão consolidado em apps de mobilidade e delivery."
+  }
+},
+
+/* 3 — LN-004 --------------------------------------------------- */
+{
+  code:"LN-004",
+  nav:"Cadastro do titular",
+  navSub:"Tela 4 de 14",
+  progress:28,
+  count:"4 de 14",
+  title:"A conta ficará em nome de quem?",
+  sub:"Informe o CPF ou CNPJ do titular",
+  content:`
+    <div class="field">
+      <label>CPF / CNPJ</label>
+      <div class="box editable">123.456.789-00</div>
+    </div>
+    <div class="banner success"><b>Encontramos seus dados</b>Confira se estão corretos antes de continuar.</div>
+    <div class="row-list">
+      <div class="row-item"><span class="k">Nome</span><span class="v">Maria A. Souza</span></div>
+      <div class="row-item"><span class="k">Telefone</span><span class="v">(27) 9 9999-0000</span></div>
+      <div class="row-item"><span class="k">E-mail</span><span class="v">maria@email.com</span></div>
+    </div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">🤳</span><div class="txt"><b>Selfie com prova de vida</b><small>Recomendado, confirma sua identidade</small></div><span class="check"></span></div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(4)">Confirmar dados</button>`,
+  spec:{
+    obj:"Identificar quem ficará responsável pela unidade consumidora, com preenchimento automático sempre que possível.",
+    quote:"A conta ficará em nome de quem?",
+    rules:[
+      ["RN-011","Consultar automaticamente dados disponíveis em bases integradas antes de solicitar digitação."],
+      ["RN-012","Validar formato e situação cadastral de CPF/CNPJ em tempo real."],
+      ["RN-013","Não solicitar novamente informação já existente e validada em etapa anterior."]
+    ],
+    bp:"Preenchimento automático a partir do CPF/CNPJ, no padrão de fintechs (“encontramos seus dados, confirme”), com prova de vida por selfie — mesmo padrão de KYC de bancos digitais (seção 3.2)."
+  }
+},
+
+/* 4 — LN-007 --------------------------------------------------- */
+{
+  code:"LN-007",
+  nav:"Relação com o imóvel",
+  navSub:"Tela 7 de 14",
+  progress:38,
+  count:"7 de 14",
+  title:"Qual é sua relação com este imóvel?",
+  sub:"Isso define quais documentos vamos pedir",
+  content:`
+    <div class="card selected" onclick="selectCard(this)"><span class="ico">🏠</span><div class="txt"><b>Proprietário</b></div><span class="check"></span></div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">🔑</span><div class="txt"><b>Inquilino</b></div><span class="check"></span></div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">🌾</span><div class="txt"><b>Posse rural</b></div><span class="check"></span></div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">📄</span><div class="txt"><b>Outro</b></div><span class="check"></span></div>
+    <div class="banner info"><b>Só um documento</b>Você não precisa enviar tudo. Basta um documento válido para comprovar sua relação com o imóvel.</div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(5)">Continuar</button>`,
+  spec:{
+    obj:"Determinar apenas os documentos de posse/propriedade realmente aplicáveis à situação do cliente, sem apresentar uma lista genérica extensa.",
+    quote:"Qual é sua relação com este imóvel?",
+    rules:[
+      ["RN-018","Mostrar somente os documentos aplicáveis à opção escolhida."],
+      ["RN-019","Se o documento não contiver endereço completo, permitir documento complementar (ex.: IPTU)."],
+      ["RN-020","Comparar automaticamente o endereço do documento com o endereço solicitado."]
+    ],
+    bp:null
+  }
+},
+
+/* 5 — LN-009 --------------------------------------------------- */
+{
+  code:"LN-009",
+  nav:"Equipamentos",
+  navSub:"Tela 9 de 14",
+  progress:48,
+  count:"9 de 14",
+  title:"O que você pretende usar neste imóvel?",
+  sub:"Selecione, sem se preocupar com potência",
+  content:`
+    <div class="card selected"><span class="ico">🚿</span><div class="txt"><b>Chuveiro elétrico</b></div>
+      <div class="stepper-qty"><button onclick="event.stopPropagation()">–</button><span>1</span><button onclick="event.stopPropagation()">+</button></div>
+    </div>
+    <div class="card selected"><span class="ico">🧊</span><div class="txt"><b>Geladeira</b></div>
+      <div class="stepper-qty"><button onclick="event.stopPropagation()">–</button><span>1</span><button onclick="event.stopPropagation()">+</button></div>
+    </div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">❄️</span><div class="txt"><b>Ar-condicionado</b></div><span class="check"></span></div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">🍞</span><div class="txt"><b>Forno elétrico</b></div><span class="check"></span></div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">🔌</span><div class="txt"><b>Carregador de VE</b></div><span class="check"></span></div>
+    <div class="banner warn"><b>Não sabe a potência?</b>Tire uma foto da etiqueta do equipamento e identificamos para você.</div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(6)">Calcular minha energia</button>`,
+  spec:{
+    obj:"Levantar a carga elétrica de forma amigável, sem exigir que o cliente conheça potências ou faça cálculos.",
+    quote:"O que você pretende usar neste imóvel?",
+    rules:[["RN-023","Usar um catálogo de equipamentos/potências usuais apenas como apoio, nunca ocultando as premissas técnicas do cálculo."]],
+    bp:"Seleção visual em cards, como em apps de delivery ou montagem de pedido, torna o levantamento de carga uma experiência leve em vez de um formulário técnico."
+  }
+},
+
+/* 6 — LN-010 --------------------------------------------------- */
+{
+  code:"LN-010",
+  nav:"Cálculo da carga",
+  navSub:"Tela 10 de 14 · automática",
+  progress:55,
+  count:"10 de 14",
+  title:"Já calculamos a energia necessária",
+  sub:"Você não precisa somar nada manualmente",
+  content:`
+    <div class="stat-big"><div class="num">7,4</div><div class="unit">quilowatts (kW) de carga instalada</div></div>
+    <div class="row-list">
+      <div class="row-item"><span class="k">Maior equipamento</span><span class="v">Chuveiro 5.500 W</span></div>
+      <div class="row-item"><span class="k">Cargas especiais</span><span class="v">Nenhuma</span></div>
+      <div class="row-item"><span class="k">Tensão necessária</span><span class="v">127/220 V</span></div>
+    </div>
+    <div class="banner success"><b>Cálculo automático</b>O sistema somou tudo por você a partir dos equipamentos informados.</div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(7)">Ver o que preciso instalar</button>
+    <button class="btn btn-ghost" style="margin-top:8px;border:1px solid var(--linha);" onclick="go(15)">Simular caso que exige projeto elétrico</button>`,
+  spec:{
+    obj:"Consolidar automaticamente a carga instalada, sem exigir soma manual do cliente.",
+    quote:null,
+    rules:[["RN-024","O cliente não deve, em nenhuma hipótese, calcular manualmente a soma de potências."]],
+    bp:null
+  }
+},
+
+/* 7 — LN-012 --------------------------------------------------- */
+{
+  code:"LN-012",
+  nav:"Definição do fornecimento",
+  navSub:"Tela 12 de 14 · automática",
+  progress:65,
+  count:"12 de 14",
+  title:"Seu padrão de entrada",
+  sub:"Definido automaticamente pelo motor de regras",
+  content:`
+    <div class="row-list">
+      <div class="row-item"><span class="k">Fornecimento</span><span class="v">Monofásico</span></div>
+      <div class="row-item"><span class="k">Disjuntor</span><span class="v">40 A</span></div>
+      <div class="row-item"><span class="k">Tensão</span><span class="v">127/220 V</span></div>
+      <div class="row-item"><span class="k">Responsável técnico</span><span class="v">Não necessário</span></div>
+    </div>
+    <div class="banner info"><b>Linguagem para o eletricista</b>Também geramos a especificação técnica completa para quem for construir seu padrão.</div>
+    <button class="btn btn-ghost" style="border:1px solid var(--linha);">Enviar para meu eletricista</button>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(8)">Continuar</button>`,
+  spec:{
+    obj:"O motor de regras determina automaticamente o tipo de fornecimento e as características do padrão, sem que o cliente escolha livremente.",
+    quote:null,
+    rules:[
+      ["RN-026","O cliente não escolhe livremente o tipo de fornecimento (mono/bi/trifásico)."],
+      ["RN-027","Se o cliente solicitar condição superior ou inferior à calculada, exigir validação técnica."],
+      ["RN-030","Sempre apresentar a informação em duas camadas: linguagem simples para o cliente e especificação completa para o eletricista."]
+    ],
+    bp:"Botão “Enviar para meu eletricista” gera link compartilhável, dispensando o compartilhamento de login — prática usual em ferramentas colaborativas."
+  }
+},
+
+/* 8 — LN-016/017 --------------------------------------------------- */
+{
+  code:"LN-016 / 017",
+  nav:"Análise de rede e padrão",
+  navSub:"Tela 13 de 14",
+  progress:72,
+  count:"13 de 14",
+  title:"A rede aqui já está pronta",
+  sub:"Classe A · atendimento simples",
+  content:`
+    <div class="banner success"><b>Classe A</b>A rede próxima apresenta condições preliminares para atendimento. Nenhuma obra necessária.</div>
+    <div class="row-list">
+      <div class="row-item"><span class="k">Passo 1</span><span class="v">Compartilhe com seu eletricista</span></div>
+      <div class="row-item"><span class="k">Passo 2</span><span class="v">Construa o padrão</span></div>
+      <div class="row-item"><span class="k">Passo 3</span><span class="v">Volte aqui quando estiver pronto</span></div>
+    </div>
+    <div class="chiprow">
+      <span class="chip">Classe A</span><span class="chip">Classe B</span><span class="chip">Classe C</span>
+    </div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(9)">Meu padrão está pronto</button>`,
+  spec:{
+    obj:"Antecipar via GIS e engenharia se a rede é suficiente, classificando o caso antes de qualquer ação do cliente, e orientar a execução física da entrada.",
+    quote:null,
+    rules:[
+      ["Classes","A = atendimento simples · B = necessita análise · C = provável obra de extensão/reforço."],
+      ["RN-031","Não encaminhar para vistoria sem confirmação explícita de que o padrão está concluído."]
+    ],
+    bp:"Reflete a lógica de straight-through processing: casos Classe A seguem sem intervenção humana; só B e C acionam a equipe técnica."
+  }
+},
+
+/* 9 — LN-018 --------------------------------------------------- */
+{
+  code:"LN-018",
+  nav:"Pré-vistoria digital",
+  navSub:"Tela 9 de 14",
+  progress:80,
+  count:"14 de 14",
+  title:"Vamos fotografar seu padrão",
+  sub:"Fotos guiadas, uma de cada vez",
+  content:`
+    <div class="frame-photo">
+      <span class="big">📷</span>
+      <span>Encaixe a caixa de medição na moldura</span>
+    </div>
+    <div class="row-list doclist">
+      <div class="row-item"><span class="dot ok"></span><span class="k">Visão geral do padrão</span><span class="v">Capturada</span></div>
+      <div class="row-item"><span class="dot ok"></span><span class="k">Caixa de medição</span><span class="v">Capturada</span></div>
+      <div class="row-item"><span class="dot pending"></span><span class="k">Aterramento</span><span class="v">Pendente</span></div>
+      <div class="row-item"><span class="dot pending"></span><span class="k">Padrão x rede</span><span class="v">Pendente</span></div>
+    </div>
+    <div class="banner alert"><b>Foto insuficiente</b>Não conseguimos visualizar o disjuntor. Tire uma foto mais próxima.</div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(10)">Continuar</button>`,
+  spec:{
+    obj:"Capturar fotos e vídeo de forma guiada para agilizar a vistoria oficial, identificando inconformidades antes da visita presencial.",
+    quote:null,
+    rules:[["RN-032","A quantidade e o tipo de fotos exigidas variam conforme o padrão definido em LN-012."]],
+    bp:"Captura guiada com moldura e validação de foco, luz e enquadramento em tempo real — mesmo padrão usado por bancos digitais na captura de documentos (seção 3.1)."
+  }
+},
+
+/* 10 — LN-019/020 --------------------------------------------------- */
+{
+  code:"LN-019 / 020",
+  nav:"Documentação inteligente",
+  navSub:"Tela 5 de 14",
+  progress:86,
+  count:"5 de 14",
+  title:"Seus documentos",
+  sub:"Só aparece aqui o que se aplica ao seu caso",
+  content:`
+    <div class="row-list doclist">
+      <div class="row-item"><span class="dot ok"></span><span class="k">Documento com foto</span><span class="v">Validado</span></div>
+      <div class="row-item"><span class="dot ok"></span><span class="k">Comprovante de posse</span><span class="v">Validado</span></div>
+      <div class="row-item"><span class="dot bad"></span><span class="k">Contrato de locação</span><span class="v">Endereço diverge</span></div>
+      <div class="row-item"><span class="dot ok"></span><span class="k">Declaração de carga</span><span class="v">Gerada automaticamente</span></div>
+    </div>
+    <div class="banner alert" style="margin-bottom:8px;">
+      <b>O que está errado</b>
+      O endereço do contrato de locação é diferente do endereço solicitado.
+      <br><b style="margin-top:6px;">Como corrigir</b>
+      Envie um IPTU ou declaração municipal que confirme o endereço.
+    </div>
+    <button class="btn btn-ghost" style="border:1px solid var(--vermelho);color:var(--vermelho);">Enviar documento agora</button>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(11)">Continuar</button>`,
+  spec:{
+    obj:"Apresentar dinamicamente apenas os documentos aplicáveis ao caso, com status individual e validação automática antes do protocolo.",
+    quote:null,
+    rules:[
+      ["RN-033","Nunca apresentar exigência documental que não se aplique ao caso."],
+      ["RN-034","A Declaração de Carga é gerada automaticamente, nunca preenchida manualmente em PDF."],
+      ["RN-036","Sempre que a falha puder ser detectada via OCR/IA, impedir pendência manual dias depois."]
+    ],
+    bp:"Ilustra a regra essencial de pendências (seção 10): toda pendência mostra o que está errado, por que, como corrigir e um botão para agir — nunca apenas “reprovado”."
+  }
+},
+
+/* 11 — LN-021 --------------------------------------------------- */
+{
+  code:"LN-021",
+  nav:"Revisão e aceite",
+  navSub:"Tela 6 de 14",
+  progress:92,
+  count:"6 de 14",
+  title:"Revise e assine seu pedido",
+  sub:"Última etapa antes do protocolo",
+  content:`
+    <div class="row-list">
+      <div class="row-item"><span class="k">Titular</span><span class="v">Maria A. Souza</span></div>
+      <div class="row-item"><span class="k">Carga</span><span class="v">7,4 kW</span></div>
+      <div class="row-item"><span class="k">Fornecimento</span><span class="v">Monofásico</span></div>
+      <div class="row-item"><span class="k">Documentação</span><span class="v">Completa</span></div>
+    </div>
+    <div class="signature-pad" id="sigPad" onclick="signNow(this)">Toque para assinar</div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(12)">Confirmar e enviar</button>`,
+  spec:{
+    obj:"Apresentar o resumo completo do pedido e coletar a assinatura eletrônica do cliente antes do protocolo.",
+    quote:null,
+    rules:[["Assinatura","Nível avançado (Lei nº 14.063/2020): autenticação por CPF, selfie e token, integrada ao próprio fluxo — sem redirecionar o cliente a outro sistema."]],
+    bp:"Assinatura eletrônica avançada dentro do app, no mesmo padrão de DocuSign, Clicksign, D4Sign e conta gov.br — evita abandono de funil (seção 3.3)."
+  }
+},
+
+/* 12 — LN-022 --------------------------------------------------- */
+{
+  code:"LN-022",
+  nav:"Protocolo",
+  navSub:"Tela 7 de 14",
+  progress:96,
+  count:"7 de 14",
+  title:"Solicitação recebida",
+  sub:"",
+  content:`
+    <div class="celebrate">
+      <div class="bolt">✅</div>
+      <h2>Pedido protocolado</h2>
+      <p style="font-size:13px;color:var(--texto-suave);">Protocolo nº 20260931-004</p>
+    </div>
+    <div class="banner info"><b>Acompanhe por onde quiser</b>Portal, aplicativo, WhatsApp ou e-mail — sempre com o mesmo protocolo.</div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(13)">Acompanhar meu pedido</button>`,
+  spec:{
+    obj:"Formalizar a solicitação e disponibilizar acompanhamento multicanal imediato.",
+    quote:null,
+    rules:[["RN-037","O protocolo deve ser persistente e consultável pelo cliente a qualquer momento."]],
+    bp:null
+  }
+},
+
+/* 13 — Acompanhamento (seção 7) --------------------------------------------------- */
+{
+  code:"Seção 7",
+  nav:"Acompanhamento",
+  navSub:"Status simplificado",
+  progress:100,
+  count:"acompanhamento",
+  title:"Seu pedido",
+  sub:"Protocolo nº 20260931-004",
+  content:`
+    <ul class="status-track">
+      <li class="done"><span class="em">📝</span><div><b>Preparando solicitação</b><small>Concluído</small></div></li>
+      <li class="done"><span class="em">🔍</span><div><b>Em análise</b><small>Concluído</small></div></li>
+      <li class="current"><span class="em">👷</span><div><b>Vistoria</b><small>Estamos verificando seu padrão</small></div></li>
+      <li class="todo"><span class="em">⚡</span><div><b>Pronto para ligar</b></div></li>
+      <li class="todo"><span class="em">✅</span><div><b>Energia ligada</b></div></li>
+    </ul>
+    <div class="banner warn"><b>Vistoria agendada</b>Sua visita técnica está prevista para 04/09, período da manhã.</div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(14)">Simular energização</button>`,
+  spec:{
+    obj:"Internamente o sistema mantém dezenas de status operacionais; ao cliente, mostra apenas um conjunto reduzido e sempre compreensível.",
+    quote:null,
+    rules:[
+      ["Gates","O pedido só avança para a programação da ligação quando os 7 gates obrigatórios (cadastro, localização, técnico, documental, padrão, rede e vistoria) estiverem concluídos."]
+    ],
+    bp:"Notificação proativa multicanal (push, WhatsApp, e-mail) sempre que o status mudar — mesmo padrão de apps de delivery e bancos digitais."
+  }
+},
+
+/* 14 — LN-029 --------------------------------------------------- */
+{
+  code:"LN-029",
+  nav:"Energização",
+  navSub:"Tela 14 de 14",
+  progress:100,
+  count:"14 de 14",
+  title:"",
+  sub:"",
+  content:`
+    <div class="celebrate">
+      <div class="bolt">⚡</div>
+      <h2>Sua energia está ligada!</h2>
+    </div>
+    <div class="row-list">
+      <div class="row-item"><span class="k">UC</span><span class="v">0043211-2</span></div>
+      <div class="row-item"><span class="k">Titular</span><span class="v">Maria A. Souza</span></div>
+      <div class="row-item"><span class="k">Tensão</span><span class="v">127/220 V</span></div>
+      <div class="row-item"><span class="k">Próxima leitura</span><span class="v">05/10</span></div>
+    </div>
+    <div class="banner success"><b>Bem-vinda, Maria</b>Débito automático, fatura digital e canais de atendimento já estão disponíveis para você.</div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(0)">Reiniciar demonstração</button>`,
+  spec:{
+    obj:"Confirmar o fornecimento e comunicar formalmente o cliente, transformando o encerramento técnico no início do relacionamento comercial digital.",
+    quote:null,
+    rules:[],
+    bp:null
+  }
+},
+
+/* ============ CAMINHO ALTERNATIVO: EXIGE PROJETO ELÉTRICO ============ */
+
+/* 15 — LN-011 --------------------------------------------------- */
+{
+  branch:true,
+  code:"LN-011",
+  nav:"Equipamentos especiais",
+  navSub:"Caminho com projeto",
+  progress:60,
+  count:"caminho alternativo",
+  title:"Encontramos um equipamento especial",
+  sub:"Precisamos de mais alguns dados técnicos",
+  content:`
+    <div class="banner warn"><b>Identificamos</b>Motor de bombeamento entre os equipamentos informados em LN-009.</div>
+    <div class="field"><label>Potência do motor</label><div class="box editable">3 cv</div></div>
+    <div class="field"><label>Tensão</label><div class="box editable">220 V</div></div>
+    <div class="card selected" onclick="selectCard(this)"><span class="ico">⚙️</span><div class="txt"><b>Partida direta</b></div><span class="check"></span></div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">🔺</span><div class="txt"><b>Estrela-triângulo</b></div><span class="check"></span></div>
+    <div class="card" onclick="selectCard(this)"><span class="ico">🎚️</span><div class="txt"><b>Soft-starter</b></div><span class="check"></span></div>
+    <div class="banner alert"><b>Atenção</b>Esse tipo de carga pode exigir projeto elétrico e um profissional habilitado, dependendo da potência total.</div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(16)">Continuar</button>`,
+  spec:{
+    obj:"Identificar automaticamente a presença de cargas especiais (motor, solda, raios-X, elevador, VE etc.) e solicitar apenas os dados técnicos complementares necessários — sem transformar isso em um formulário técnico genérico.",
+    quote:null,
+    rules:[["RN-025","Os gatilhos que acionam exigências (limites de disjuntor/carga) devem ser parametrizados pela norma técnica própria da ELFSM, a REN 1.000 e demais regulamentações — nunca copiados diretamente de outra distribuidora."]],
+    bp:null
+  }
+},
+
+/* 16 — LN-013 --------------------------------------------------- */
+{
+  branch:true,
+  code:"LN-013",
+  nav:"Responsável técnico",
+  navSub:"Caminho com projeto",
+  progress:66,
+  count:"caminho alternativo",
+  title:"Você vai precisar de um profissional habilitado",
+  sub:"Pelas características da sua instalação",
+  content:`
+    <div class="banner info"><b>Quando aplicável</b>O motor identificado em LN-011 exige acompanhamento de um profissional habilitado.</div>
+    <div class="field"><label>Nome do profissional</label><div class="box editable">Toque para preencher</div></div>
+    <div class="field"><label>Conselho profissional e registro</label><div class="box editable">CREA · CAU · CFT</div></div>
+    <div class="frame-photo" style="height:110px;">
+      <span class="big">📄</span>
+      <span>Enviar ART / RRT / TRT</span>
+    </div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(17)">Enviar dados do profissional</button>`,
+  spec:{
+    obj:"Verificar automaticamente a necessidade de profissional habilitado (ART/RRT/TRT), exibindo esta tela apenas quando o motor de regras identificar a necessidade.",
+    quote:null,
+    rules:[["Acionamento","Tela exibida somente quando a carga especial identificada em LN-011 ultrapassa os limites técnicos parametrizados (ver RN-025)."]],
+    bp:null
+  }
+},
+
+/* 17 — LN-014 --------------------------------------------------- */
+{
+  branch:true,
+  code:"LN-014",
+  nav:"Projeto elétrico",
+  navSub:"Caminho com projeto",
+  progress:72,
+  count:"caminho alternativo",
+  title:"Sua instalação precisa de projeto elétrico",
+  sub:"Seu pedido continua ativo durante a análise",
+  content:`
+    <div class="banner warn"><b>Quando aplicável</b>Sua instalação precisa de projeto elétrico antes da ligação.</div>
+    <div class="row-list">
+      <div class="row-item"><span class="k">Enviado por</span><span class="v">Seu eletricista</span></div>
+      <div class="row-item"><span class="k">Status do projeto</span><span class="v">Em análise</span></div>
+      <div class="row-item"><span class="k">Prazo estimado</span><span class="v">5 dias úteis</span></div>
+    </div>
+    <button class="btn btn-ghost" style="border:1px solid var(--linha);margin-bottom:10px;">Acompanhar no Portal do Projetista</button>
+    <div class="banner success"><b>Nada se perde</b>Seu protocolo nº 20260931-004 permanece o mesmo — você não inicia um novo pedido.</div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(18)">Ver status do meu pedido</button>`,
+  spec:{
+    obj:"Abrir a sub-jornada de projeto elétrico apenas quando exigido pelo motor de regras, sem interromper ou reiniciar o pedido principal.",
+    quote:null,
+    rules:[
+      ["RN-028","O pedido de Ligação Nova permanece ativo durante toda a análise de projeto."],
+      ["RN-029","O cliente não deve ser obrigado a iniciar um novo pedido após a aprovação do projeto."]
+    ],
+    bp:"Área específica “Portal do Projetista” para o profissional enviar o projeto, acompanhar a análise, receber pendências e obter aprovação — sem exigir que o cliente abra outro sistema."
+  }
+},
+
+/* 18 — Acompanhamento com projeto (seção 7) --------------------------------------------------- */
+{
+  branch:true,
+  code:"Seção 7",
+  nav:"Projeto em análise",
+  navSub:"Status simplificado",
+  progress:72,
+  count:"caminho alternativo",
+  title:"Seu pedido",
+  sub:"Protocolo nº 20260931-004",
+  content:`
+    <ul class="status-track">
+      <li class="done"><span class="em">📝</span><div><b>Preparando solicitação</b><small>Concluído</small></div></li>
+      <li class="current"><span class="em">🔍</span><div><b>Em análise</b><small>Aguardando aprovação do projeto elétrico enviado pelo seu eletricista</small></div></li>
+      <li class="todo"><span class="em">👷</span><div><b>Vistoria</b></div></li>
+      <li class="todo"><span class="em">⚡</span><div><b>Pronto para ligar</b></div></li>
+      <li class="todo"><span class="em">✅</span><div><b>Energia ligada</b></div></li>
+    </ul>
+    <div class="banner info"><b>Mesmo protocolo</b>Mesmo com o projeto em análise, você acompanha tudo pelo mesmo número de pedido.</div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(19)">Simular projeto aprovado</button>`,
+  spec:{
+    obj:"Ao cliente, o andamento do projeto elétrico aparece dentro do mesmo status simplificado “Em análise” — sem expor o jargão interno do processo de engenharia.",
+    quote:null,
+    rules:[],
+    bp:null
+  }
+},
+
+/* 19 — LN-015 com projeto aprovado --------------------------------------------------- */
+{
+  branch:true,
+  code:"LN-015",
+  nav:"Resultado técnico (projeto aprovado)",
+  navSub:"Caminho com projeto",
+  progress:78,
+  count:"caminho alternativo",
+  title:"Seu padrão foi aprovado",
+  sub:"Projeto elétrico concluído com sucesso",
+  content:`
+    <div class="banner success"><b>Projeto aprovado</b>Seu eletricista já pode seguir com a construção do padrão.</div>
+    <div class="row-list">
+      <div class="row-item"><span class="k">Fornecimento</span><span class="v">Trifásico</span></div>
+      <div class="row-item"><span class="k">Disjuntor</span><span class="v">100 A</span></div>
+      <div class="row-item"><span class="k">Responsável técnico</span><span class="v">Eng. João Lima</span></div>
+      <div class="row-item"><span class="k">ART</span><span class="v">nº 45892-ES</span></div>
+    </div>
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(8)">Continuar para análise de rede</button>`,
+  spec:{
+    obj:"Apresentar o padrão definido em duas camadas de linguagem — simples para o cliente e completa para o eletricista — agora já incorporando as definições do projeto aprovado, e retomar o fluxo principal sem reabrir o pedido.",
+    quote:null,
+    rules:[["RN-030","Sempre apresentar a informação técnica em duas camadas: linguagem simples para o cliente e especificação completa para o eletricista/profissional."]],
+    bp:null
+  }
+},
+];
+
+const rail = document.getElementById('rail');
+screens.forEach((s,i)=>{
+  if(s.branch && !screens[i-1].branch){
+    const divider = document.createElement('div');
+    divider.className = 'rail-label';
+    divider.style.marginTop = '14px';
+    divider.style.paddingTop = '14px';
+    divider.style.borderTop = '1px solid var(--linha)';
+    divider.textContent = 'Caminho alternativo: exige projeto elétrico';
+    rail.appendChild(divider);
+  }
+  const b = document.createElement('button');
+  b.className='rail-item';
+  b.onclick=()=>go(i);
+  const marker = i===0 ? '●' : (s.branch ? '🔧' : i);
+  b.innerHTML = `<span class="rail-num">${marker}</span>
+    <span class="rail-item-text"><b>${s.nav}</b><small>${s.code}</small></span>`;
+  rail.appendChild(b);
+});
+
+function selectCard(el){
+  const siblings = el.parentElement.querySelectorAll('.card');
+  siblings.forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function signNow(el){
+  el.textContent = "✓ Assinado com sucesso";
+  el.classList.add('done');
+}
+
+function go(i){
+  const s = screens[i];
+  document.querySelectorAll('.rail-item').forEach((el,idx)=>el.classList.toggle('active', idx===i));
+
+  let headerHtml = '';
+  if(s.header !== false){
+    headerHtml = `
+      <div class="app-header">
+        <div class="stepline">
+          <span class="back">‹</span>
+          <span class="count">${s.count||''}</span>
+        </div>
+        <div class="track"><div class="track-fill" style="width:${s.progress||0}%"></div></div>
+        <h2>${s.title||''}</h2>
+        <p>${s.sub||''}</p>
+      </div>`;
+  }
+
+  const phoneBody = document.getElementById('phoneBody');
+  phoneBody.style.opacity = 0;
+  setTimeout(()=>{
+    phoneBody.innerHTML = `
+      ${headerHtml}
+      <div class="app-content">${s.content}</div>
+      <div class="app-footer">${s.footer}</div>
+    `;
+    phoneBody.style.opacity = 1;
+  }, 90);
+
+  const sp = s.spec;
+  let rulesHtml = '';
+  if(sp.rules && sp.rules.length){
+    rulesHtml = `<div class="spec-block"><h3>Regras de negócio aplicadas</h3><ul class="rn-list">
+      ${sp.rules.map(r=>`<li><b>${r[0]}</b>${r[1]}</li>`).join('')}
+    </ul></div>`;
+  }
+  let quoteHtml = sp.quote ? `<div class="spec-block"><h3>Pergunta ao cliente</h3><p class="quote">“${sp.quote}”</p></div>` : '';
+  let bpHtml = sp.bp ? `<div class="spec-block"><h3>Boa prática de mercado incorporada</h3><div class="bp"><span class="tag">Benchmark</span><br>${sp.bp}</div></div>` : '';
+
+  document.getElementById('specPanel').innerHTML = `
+    <span class="spec-code">${s.code}</span>
+    <h2>${s.nav}</h2>
+    <p class="obj">${sp.obj}</p>
+    ${quoteHtml}
+    ${rulesHtml}
+    ${bpHtml}
+  `;
+}
+
+document.getElementById('phoneBody').style.transition = 'opacity .12s ease';
+go(0);
+</script>
+</body>
+</html>
