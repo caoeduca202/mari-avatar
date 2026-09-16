@@ -340,7 +340,7 @@
 <canvas id="presence-canvas" width="320" height="240" style="display:none;"></canvas>
 
 <header id="header-glass">
-  <h1>Santa Maria</h1>
+  <img src="logo.png" alt="Santa Maria" style="height: 42px; margin-bottom: 8px; object-fit: contain;" />
   <p>Bem-vindo ao nosso portal interativo!</p>
 </header>
 
@@ -485,7 +485,7 @@ loader.load('mari.glb', (gltf) => {
   // FIX DEFINITIVO: O GLB tem exatamente 1 metro (de -0.5 a 0.5)
   // Vamos dobrar o tamanho para 2 metros e posicionar os pés no chão da tela.
   model.scale.setScalar(2.0); 
-  model.position.set(0, -0.3, 0); 
+  model.position.set(0, 0.4, 0); 
   
   scene.add(model);
   
