@@ -438,7 +438,8 @@ const screens = [
     </div>
     <div class="banner warn"><b>Sem número ou endereço formal?</b>Sem problema. Marque o imóvel no mapa e informe um ponto de referência.</div>
   `,
-  footer:`<button class="btn btn-primary" onclick="go(3)">Confirmar local</button>`,
+  footer:`<button class="btn btn-primary" onclick="go(3)">Confirmar local</button>
+    <button class="btn btn-ghost" style="margin-top:8px;border:1px solid var(--linha);" onclick="go(21)">Simular área rural (Restrições)</button>`,
   spec:{
     obj:"Georreferenciar corretamente o ponto de atendimento, mesmo quando não existe endereço formal — situação comum em área rural.",
     quote:"Onde você precisa de energia?",
@@ -477,7 +478,8 @@ const screens = [
     </label>
     <input type="file" id="selfie-upload" accept="image/*" capture="user" style="display:none;" onchange="document.getElementById('selfie-status').innerText='Foto anexada ✓';document.getElementById('selfie-status').style.color='var(--verde)';">
   `,
-  footer:`<button class="btn btn-primary" onclick="go(4)">Confirmar dados</button>`,
+  footer:`<button class="btn btn-primary" onclick="go(4)">Confirmar dados</button>
+    <button class="btn btn-ghost" style="margin-top:8px;border:1px solid var(--linha);" onclick="go(20)">Sou Empresa (Pessoa Jurídica)</button>`,
   spec:{
     obj:"Identificar quem ficará responsável pela unidade consumidora, com preenchimento automático sempre que possível.",
     quote:"A conta ficará em nome de quem?",
@@ -651,10 +653,11 @@ const screens = [
   title:"Vamos fotografar seu padrão",
   sub:"Fotos guiadas, uma de cada vez",
   content:`
-    <div class="frame-photo">
+    <label for="padrao-upload" class="frame-photo" style="cursor:pointer;" id="padrao-frame">
       <span class="big">📷</span>
-      <span>Encaixe a caixa de medição na moldura</span>
-    </div>
+      <span id="padrao-text">Toque para fotografar a caixa de medição</span>
+    </label>
+    <input type="file" id="padrao-upload" accept="image/*" capture="environment" style="display:none;" onchange="document.getElementById('padrao-frame').style.background='#EAF6EF';document.getElementById('padrao-frame').style.borderColor='var(--verde)';document.getElementById('padrao-text').innerText='Foto validada ✓';document.getElementById('padrao-text').style.color='var(--verde)';">
     <div class="row-list doclist">
       <div class="row-item"><span class="dot ok"></span><span class="k">Visão geral do padrão</span><span class="v">Capturada</span></div>
       <div class="row-item"><span class="dot ok"></span><span class="k">Caixa de medição</span><span class="v">Capturada</span></div>
@@ -781,7 +784,8 @@ const screens = [
     </ul>
     <div class="banner warn"><b>Vistoria agendada</b>Sua visita técnica está prevista para 04/09, período da manhã.</div>
   `,
-  footer:`<button class="btn btn-primary" onclick="go(14)">Simular energização</button>`,
+  footer:`<button class="btn btn-primary" onclick="go(14)">Simular energização</button>
+    <button class="btn btn-ghost" style="margin-top:8px;border:1px solid var(--linha);color:var(--vermelho);" onclick="go(22)">Simular reprovação (Pendência)</button>`,
   spec:{
     obj:"Internamente o sistema mantém dezenas de status operacionais; ao cliente, mostra apenas um conjunto reduzido e sempre compreensível.",
     quote:null,
@@ -967,6 +971,95 @@ const screens = [
     quote:null,
     rules:[["RN-030","Sempre apresentar a informação técnica em duas camadas: linguagem simples para o cliente e especificação completa para o eletricista/profissional."]],
     bp:null
+  }
+},
+/* 20 — LN-004-PJ (Pessoa Jurídica) --------------------------------------------------- */
+{
+  branch: true,
+  code:"LN-004-PJ",
+  nav:"Cadastro do CNPJ",
+  navSub:"Caminho alternativo",
+  progress:28,
+  count:"caminho alternativo",
+  title:"Dados da empresa",
+  sub:"Informe o CNPJ e o representante",
+  content:`
+    <div class="field"><label>CNPJ</label><input type="text" class="box editable" style="width:100%;font-family:inherit;" placeholder="00.000.000/0001-00"></div>
+    <div class="field"><label>CPF do Representante Legal</label><input type="text" class="box editable" style="width:100%;font-family:inherit;" placeholder="123.456.789-00"></div>
+    <div class="banner warn"><b>Contrato Social</b>Precisamos verificar o vínculo do representante com a empresa.</div>
+    <label for="contrato-upload" class="card" onclick="selectCard(this)">
+      <span class="ico">📄</span><div class="txt"><b>Enviar Contrato Social</b><small id="contrato-status">Toque para enviar PDF ou foto</small></div><span class="check"></span>
+    </label>
+    <input type="file" id="contrato-upload" accept="application/pdf, image/*" style="display:none;" onchange="document.getElementById('contrato-status').innerText='Documento recebido ✓';document.getElementById('contrato-status').style.color='var(--verde)';">
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(4)">Confirmar e continuar</button>`,
+  spec:{
+    obj:"Diferenciar o fluxo PJ de forma sutil, solicitando Representante Legal e Contrato Social de maneira integrada, sem criar outro pedido.",
+    quote:"Quais são os dados da empresa?",
+    rules:[["RN-011-B","Validar situação cadastral e societária do CNPJ e confrontar com o CPF do representante em bases oficiais."]],
+    bp:"Processo PJ em funil unificado: a jornada se bifurca rapidamente e logo retorna ao fluxo comum, mantendo uma única experiência."
+  }
+},
+/* 21 — LN-005 (Restrição Territorial) --------------------------------------------------- */
+{
+  branch: true,
+  code:"LN-005",
+  nav:"Restrição Ambiental",
+  navSub:"Caminho rural",
+  progress:20,
+  count:"caminho alternativo",
+  title:"Seu imóvel fica em área rural",
+  sub:"Algumas validações extras são necessárias",
+  content:`
+    <div class="banner alert"><b>Região Protegida (APP)</b>O GIS identificou que este ponto intercepta uma Área de Preservação Permanente (APP).</div>
+    <div class="row-list">
+      <div class="row-item"><span class="k">Coordenada</span><span class="v">-19.5381, -40.6281</span></div>
+      <div class="row-item"><span class="k">Bioma</span><span class="v">Mata Atlântica</span></div>
+    </div>
+    <div class="banner info">Neste caso, a legislação (Resolução Normativa) exige apresentação de Licença Ambiental ou Dispensa do órgão competente.</div>
+    <label for="licenca-upload" class="card" onclick="selectCard(this)">
+      <span class="ico">🌿</span><div class="txt"><b>Anexar Licença / Dispensa</b><small id="licenca-status">Toque para enviar o documento</small></div><span class="check"></span>
+    </label>
+    <input type="file" id="licenca-upload" accept="application/pdf, image/*" style="display:none;" onchange="document.getElementById('licenca-status').innerText='Licença enviada ✓';document.getElementById('licenca-status').style.color='var(--verde)';">
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(3)">Prosseguir com licença</button>`,
+  spec:{
+    obj:"Filtrar automaticamente impedimentos ambientais utilizando base de dados espaciais (GIS) e só exigir licenciamento quando efetivamente interceptar área restrita.",
+    quote:null,
+    rules:[["RN-009","O sistema deve bloquear a Ligação Nova em áreas com restrições territoriais severas (Terra Indígena, Quilombo) e exigir licenciamento em APPs."]],
+    bp:"Integração GIS no onboarding evita recusas tardias no processo."
+  }
+},
+/* 22 — LN-026 (Correção de Pendência) --------------------------------------------------- */
+{
+  branch: true,
+  code:"LN-026",
+  nav:"Correção Rápida",
+  navSub:"Sem reiniciar o pedido",
+  progress:100,
+  count:"exceção",
+  title:"Precisamos da sua ajuda",
+  sub:"Houve uma pendência na sua solicitação",
+  content:`
+    <div class="banner alert">
+      <b>O que está errado?</b><br>
+      A foto "Caixa de Medição" ficou ilegível ou muito escura.
+    </div>
+    <div class="banner info">
+      <b>Como corrigir?</b><br>
+      Tire uma nova foto da caixa de medição durante o dia, garantindo que os cabos e o disjuntor estejam nítidos. Você não perdeu seu pedido.
+    </div>
+    <label for="pendencia-upload" class="card" onclick="selectCard(this)">
+      <span class="ico">📸</span><div class="txt"><b>Tirar nova foto</b><small id="pendencia-status">Corrigir pendência agora</small></div><span class="check"></span>
+    </label>
+    <input type="file" id="pendencia-upload" accept="image/*" capture="environment" style="display:none;" onchange="document.getElementById('pendencia-status').innerText='Correção enviada ✓';document.getElementById('pendencia-status').style.color='var(--verde)';">
+  `,
+  footer:`<button class="btn btn-primary" onclick="go(13)">Confirmar envio e retornar</button>`,
+  spec:{
+    obj:"Permitir que o cliente resolva pendências documentais ou de vistoria rapidamente (No Restart), enviando apenas o item defeituoso.",
+    quote:null,
+    rules:[["RN-036","Regra 'Actionable Pending': a pendência jamais finaliza ou recomeça o fluxo. O cliente corrige o erro na mesma etapa."]],
+    bp:"Aplica o princípio 'No Dead End', mantendo o cliente engajado mesmo após reprovação parcial."
   }
 },
 ];
