@@ -1022,7 +1022,7 @@ LINKS ÚTEIS DA EMPRESA (Se o usuário pedir, SEMPRE gere um QR Code imediatamen
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
+        model: "llama3-8b-8192",
         messages: messages,
         tools: tools,
         tool_choice: "auto",
