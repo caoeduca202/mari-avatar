@@ -1022,7 +1022,7 @@ LINKS ÚTEIS DA EMPRESA (Se o usuário pedir, SEMPRE gere um QR Code imediatamen
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
       body: JSON.stringify({
-        model: "qwen/qwen3.8-27b",
+        model: "llama-3.1-8b-instant",
         messages: messages,
         tools: tools,
         tool_choice: "auto",
@@ -1165,9 +1165,19 @@ async function speak(text) {
     };
     currentAudio.play();
   } catch (e) {
-    console.error(e);
-    resetMicBtn();
-    doEmotion('sad');
+    console.warn("ElevenLabs falhou ou limite atingido. Usando voz nativa do navegador...", e);
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'pt-BR';
+    utterance.onstart = () => {
+      doEmotion('happy');
+      setMicState('speaking', 'Falando...', '🗣️');
+    };
+    utterance.onend = () => {
+      resetMicBtn();
+      doEmotion('idle');
+    };
+    synth.speak(utterance);
   }
 }
 
